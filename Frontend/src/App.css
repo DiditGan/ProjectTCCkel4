@@ -1,0 +1,231 @@
+/* Reset default styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  scroll-behavior: smooth; /* Menambahkan smooth scroll ke seluruh halaman */
+}
+
+/* Global container to control width */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Navbar Styling - Sticky Navbar */
+.navbar {
+  background-color: #205718; /* Hijau Daun */
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.navbar .logo img {
+  width: 50px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.navbar .logo img:hover {
+  transform: scale(1.1); /* Efek hover memperbesar logo */
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.nav-links a:hover {
+  color: #FDCB02; /* Kuning */
+}
+
+/* Hero Section */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  padding: 4rem 2rem;
+  background: #cadc84; /* Hijau Muda */
+  color: black;
+  flex-wrap: wrap;
+}
+
+.hero-text {
+  max-width: 50%;
+  margin-right: 2rem;
+}
+
+.hero-text h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.hero-text p {
+  font-size: 1.3rem;
+}
+
+.hero-image {
+  max-width: 35%;
+}
+
+.hero-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+/* About Us Section */
+.about {
+  padding: 4rem 2rem;
+  text-align: center;
+  background: #fff;
+}
+
+.about h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #205718; /* Hijau Daun */
+}
+
+.about p {
+  font-size: 1.3rem;
+  margin-bottom: 2rem;
+}
+
+.team {
+  display: flex;
+  justify-content: space-around;
+  gap: 2rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.member {
+  text-align: center;
+  max-width: 250px;
+}
+
+.member img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.member p {
+  font-weight: bold;
+  color: #205718; /* Hijau Daun */
+}
+
+/* Login and Register Section */
+.login-register {
+  background-color: #cadc84; /* Hijau Muda */
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.form-container {
+  background-color: white;
+  padding: 3rem;
+  max-width: 400px;
+  margin: 0 auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h2 {
+  font-size: 2rem;
+  color: #205718; /* Hijau Daun */
+  margin-bottom: 1.5rem;
+}
+
+.input-field {
+  margin-bottom: 1rem;
+}
+
+.input-field input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.submit-btn,
+.toggle-btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.submit-btn {
+  background-color: #205718; /* Hijau Daun */
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.submit-btn:hover {
+  background-color: #FDCB02; /* Kuning */
+}
+
+.toggle-btn {
+  background-color: #FDCB02; /* Kuning */
+  color: white;
+}
+
+.toggle-btn:hover {
+  background-color: #205718; /* Hijau Daun */
+}
+
+.forgot-password {
+  margin-top: 1rem;
+}
+
+.forgot-password a {
+  color: #205718; /* Hijau Daun */
+}
+
+.forgot-password a:hover {
+  text-decoration: underline;
+}
+
+/* Footer Styling */
+.footer {
+  background: #553b13;
+  color: white;
+  text-align: center;
+  padding: 2rem;
+}
+
+.footer p {
+  margin: 5px 0;
+}
+
+.footer a {
+  color: #FDCB02; /* Kuning */
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
