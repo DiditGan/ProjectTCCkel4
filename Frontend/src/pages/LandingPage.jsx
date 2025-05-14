@@ -1,10 +1,9 @@
 import grafisImage from '../assets/grafis.png';
-import rahelImage from '../assets/Rahel.jpg';
 import yedhitImage from '../assets/Yedhit.jpg';
 import Navbar from '../components/Navbar';
-import LoginPage from '../pages/LoginPage';
+import LoginPage from './LoginPage';
 
-function DashboardPage() {
+function LandingPage() {
   return (
     <>
       <Navbar />     
@@ -44,7 +43,7 @@ function DashboardPage() {
           <h3 className="text-2xl font-semibold text-center text-green-600 mb-10">Our Team</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="flex flex-col items-center p-6 bg-green-50 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-              <img src={rahelImage} alt="Rahel" className="w-40 h-40 object-cover rounded-full border-4 border-green-500 mb-4" />
+              <img src={'https://media.licdn.com/dms/image/v2/D4E03AQGYuOSvAtPpkw/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1696573867504?e=1752710400&v=beta&t=mI5gBIfTsw-O27QqG_3KU04oYUkg-EPzfEB9efCewXc'} alt="Rahel" className="w-40 h-40 object-cover rounded-full border-4 border-green-500 mb-4" />
               <h4 className="text-xl font-medium text-green-800">Rahel Anatasya Sinaga</h4>
               <p className="text-gray-600 mt-2">Frontend Developer</p>
               <div className="flex space-x-3 mt-4">
@@ -164,4 +163,4 @@ function DashboardPage() {
   );
 }
 
-export default DashboardPage;
+export default LandingPage;

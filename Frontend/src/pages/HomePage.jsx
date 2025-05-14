@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiSearch, HiFilter } from "react-icons/hi";
 
@@ -169,9 +170,12 @@ const HomePage = () => {
                   <p className="text-green-700 font-bold mt-1">{product.price}</p>
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-sm text-gray-500">Condition: {product.condition}</span>
-                    <button className="text-green-600 hover:text-green-800 text-sm font-medium">
+                    <Link 
+                      to={`/details/${product.id}`} 
+                      className="text-green-600 hover:text-green-800 text-sm font-medium"
+                    >
                       View Details
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
