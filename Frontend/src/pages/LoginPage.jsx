@@ -3,6 +3,38 @@ import { useState } from "react";
 function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    
+    if (isLogin) {
+      // Proses login
+      fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email, password: data.password })
+      })
+        .then(res => res.json())
+        .then(data => {
+          // proses data, misal simpan token ke localStorage
+          console.log(data);
+        });
+    } else {
+      // Proses registrasi
+      fetch('http://localhost:5000/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: data.name, email: data.email, password: data.password })
+      })
+        .then(res => res.json())
+        .then(data => {
+          // proses data, misal arahkan ke halaman login
+          console.log(data);
+        });
+    }
+  };
+
   return (
     <>
       <section id="login" className="py-16 px-4 bg-gray-50">
@@ -12,7 +44,7 @@ function LoginPage() {
               {isLogin ? "Login to Your Account" : "Create an Account"}
             </h2>
             
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               {!isLogin && (
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -21,8 +53,10 @@ function LoginPage() {
                   <input
                     type="text"
                     id="name"
+                    name="name"
                     placeholder="Enter your full name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 outline-none transition-colors"
+                    required
                   />
                 </div>
               )}
@@ -34,8 +68,10 @@ function LoginPage() {
                 <input
                   type="email"
                   id="email"
+                  name="email"
                   placeholder="Enter your email"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 outline-none transition-colors"
+                  required
                 />
               </div>
               
@@ -46,8 +82,10 @@ function LoginPage() {
                 <input
                   type="password"
                   id="password"
+                  name="password"
                   placeholder="Enter your password"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 outline-none transition-colors"
+                  required
                 />
               </div>
               
