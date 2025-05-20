@@ -18,3 +18,64 @@ Content-Type: application/json
   "email": "test@example.com",
   "password": "password123"
 }
+
+### Get All Barang
+GET http://localhost:5000/barang
+
+### Get Barang by ID
+GET http://localhost:5000/barang/1
+
+### Create Barang
+POST http://localhost:5000/barang
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "item_name": "Sepeda",
+  "description": "Sepeda bekas, masih bagus",
+  "category": "Olahraga",
+  "status": "available",
+  "location": "Jakarta",
+  "image_url": "https://example.com/sepeda.jpg"
+}
+
+### Update Barang
+PUT http://localhost:5000/barang/1
+Content-Type: application/json
+
+{
+  "item_name": "Sepeda Gunung",
+  "status": "exchanged"
+}
+
+### Delete Barang
+DELETE http://localhost:5000/barang/1
+
+### Get All Transaksi
+GET http://localhost:5000/transaksi
+
+### Get Transaksi by ID
+GET http://localhost:5000/transaksi/1
+
+### Create Transaksi
+POST http://localhost:5000/transaksi
+Content-Type: application/json
+
+{
+  "item_id": 1,
+  "buyer_id": 2,
+  "seller_id": 1,
+  "transaction_date": "2024-06-01T10:00:00Z",
+  "status": "pending"
+}
+
+### Update Transaksi
+PUT http://localhost:5000/transaksi/1
+Content-Type: application/json
+
+{
+  "status": "completed"
+}
+
+### Delete Transaksi
+DELETE http://localhost:5000/transaksi/1

@@ -2,6 +2,8 @@ import express from "express";
 import db from "./config/database.js";
 import UserRoute from "./routes/UserRoute.js";
 import AuthRoute from "./routes/AuthRoute.js";
+import BarangRoute from "./routes/BarangRoute.js";
+import TransaksiRoute from "./routes/TransaksiRoute.js";
 import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
@@ -12,6 +14,8 @@ app.use(express.json());
 
 app.use(UserRoute);
 app.use(AuthRoute);
+app.use(BarangRoute);
+app.use(TransaksiRoute);
 
 const startServer = async () => {
   try {
