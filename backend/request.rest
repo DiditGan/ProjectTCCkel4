@@ -1,5 +1,12 @@
+@host = http://localhost:5000
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDc5Mzc1NTUsImV4cCI6MTc0NzkzODQ1NX0.6ZbumjS3MF7nXPVovCU8M_GEQhyynMU-jb2WRi7DpOk
+@refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDc5Mzc1NTUsImV4cCI6MTc0ODU0MjM1NX0.3gGGKELDaA_2_nU8iAFYMsRWrQS-d_Le2m9ZWpe1m-Y
+
+### Check API Status
+GET {{host}}/api-status
+
 ### Register User
-POST http://localhost:5000/register
+POST {{host}}/register
 Content-Type: application/json
 
 {
@@ -11,7 +18,8 @@ Content-Type: application/json
 }
 
 ### Login User
-POST http://localhost:5000/login
+# This request will set accessToken and refreshToken from the response for use in other requests
+POST {{host}}/login
 Content-Type: application/json
 
 {
@@ -19,18 +27,35 @@ Content-Type: application/json
   "password": "password123"
 }
 
-### Get All Barang
-GET http://localhost:5000/barang
-
-### Get Barang by ID
-GET http://localhost:5000/barang/1
-
-### Create Barang
-POST http://localhost:5000/barang
+### Refresh Token - Get New Access Token
+POST {{host}}/token
 Content-Type: application/json
 
 {
-  "user_id": 1,
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Logout User
+POST {{host}}/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Get All Barang
+GET {{host}}/barang
+
+### Get Barang by ID
+GET {{host}}/barang/1
+
+### Create Barang (Requires auth)
+# No need to pass user_id as it's extracted from the token
+POST {{host}}/barang
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
   "item_name": "Sepeda",
   "description": "Sepeda bekas, masih bagus",
   "category": "Olahraga",
@@ -39,43 +64,49 @@ Content-Type: application/json
   "image_url": "https://example.com/sepeda.jpg"
 }
 
-### Update Barang
-PUT http://localhost:5000/barang/1
+### Update Barang (Requires auth)
+PUT {{host}}/barang/1
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 
 {
   "item_name": "Sepeda Gunung",
   "status": "exchanged"
 }
 
-### Delete Barang
-DELETE http://localhost:5000/barang/1
+### Delete Barang (Requires auth)
+DELETE {{host}}/barang/1
+Authorization: Bearer {{accessToken}}
 
-### Get All Transaksi
-GET http://localhost:5000/transaksi
+### Get All Transaksi (Requires auth)
+GET {{host}}/transaksi
+Authorization: Bearer {{accessToken}}
 
-### Get Transaksi by ID
-GET http://localhost:5000/transaksi/1
+### Get Transaksi by ID (Requires auth)
+GET {{host}}/transaksi/1
+Authorization: Bearer {{accessToken}}
 
-### Create Transaksi
-POST http://localhost:5000/transaksi
+### Create Transaksi (Requires auth)
+# Only need to provide item_id, buyer is extracted from token
+POST {{host}}/transaksi
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 
 {
   "item_id": 1,
-  "buyer_id": 2,
-  "seller_id": 1,
   "transaction_date": "2024-06-01T10:00:00Z",
   "status": "pending"
 }
 
-### Update Transaksi
-PUT http://localhost:5000/transaksi/1
+### Update Transaksi (Requires auth)
+PUT {{host}}/transaksi/1
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 
 {
   "status": "completed"
 }
 
-### Delete Transaksi
-DELETE http://localhost:5000/transaksi/1
+### Delete Transaksi (Requires auth)
+DELETE {{host}}/transaksi/1
+Authorization: Bearer {{accessToken}}

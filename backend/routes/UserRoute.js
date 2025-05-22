@@ -1,12 +1,16 @@
 import express from "express";
-import { getUsers, createUser, updateUser, deleteUser } from "../controllers/UserController.js";
+import { getMyProfile, updateMyProfile, getAllUsers, deleteUserById } from "../controllers/UserController.js";
 import { verifyToken } from "../middleware/AuthMiddleware.js";
 
 const router = express.Router();
 
-router.get("/users", verifyToken, getUsers);
-router.post("/users", verifyToken, createUser);
-router.put("/users/:user_id", verifyToken, updateUser);
-router.delete("/users/:user_id", verifyToken, deleteUser);
+// Profile routes for logged-in user
+router.get("/profile", verifyToken, getMyProfile);
+router.put("/profile", verifyToken, updateMyProfile);
+
+// Admin routes (optional, protect with admin role middleware if implemented)
+router.get("/users", verifyToken, getAllUsers); // Example: Get all users for admin
+router.delete("/users/:user_id", verifyToken, deleteUserById); // Example: Delete user by ID for admin
+
 
 export default router;
