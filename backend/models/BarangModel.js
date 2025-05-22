@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 import db from "../config/database.js";
 import User from "./UserModel.js";
 
-const Barang = db.define("barang", {
+const Product = db.define("barang", {
   item_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -29,8 +29,16 @@ const Barang = db.define("barang", {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  price: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+  },
+  condition: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   status: {
-    type: DataTypes.ENUM("available", "donated", "exchanged"),
+    type: DataTypes.ENUM("available", "sold", "donated", "exchanged"),
     allowNull: false,
     defaultValue: "available",
   },
@@ -42,10 +50,26 @@ const Barang = db.define("barang", {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  date_posted: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+  },
+  views: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  interested_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  }
 }, {
-  timestamps: false,
+  timestamps: true,
+  updatedAt: 'updated_at',
+  createdAt: 'created_at'
 });
 
-Barang.belongsTo(User, { foreignKey: "user_id" });
+Product.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(Product, { foreignKey: "user_id" });
 
-export default Barang;
+export default Product;

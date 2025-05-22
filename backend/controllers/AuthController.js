@@ -2,6 +2,13 @@ import User from "../models/UserModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+// Store refresh tokens - in production, use Redis or database
+let refreshTokens = [];
+
+// Ensure token secrets are set, with fallbacks for development
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || "access_secret_dev_key";
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "refresh_secret_dev_key";
+
 export const register = async (req, res) => {
   const { email, password, name, phone_number, profile_picture } = req.body;
   if (!email || !password || !name)
@@ -34,18 +41,77 @@ export const login = async (req, res) => {
     if (!match)
       return res.status(401).json({ msg: "Password salah" });
 
+    // Generate access token (short-lived)
     const accessToken = jwt.sign(
       { user_id: user.user_id, email: user.email },
-      process.env.ACCESS_TOKEN_SECRET,
+      ACCESS_TOKEN_SECRET,
       { expiresIn: "15m" }
     );
+    
+    // Generate refresh token (long-lived)
     const refreshToken = jwt.sign(
       { user_id: user.user_id, email: user.email },
-      process.env.REFRESH_TOKEN_SECRET,
+      REFRESH_TOKEN_SECRET,
       { expiresIn: "7d" }
     );
-    res.json({ accessToken, refreshToken });
+    
+    // Store refresh token
+    refreshTokens.push(refreshToken);
+    
+    // Return user data and tokens
+    res.json({ 
+      accessToken,
+      refreshToken,
+      user: {
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        phone_number: user.phone_number,
+        profile_picture: user.profile_picture
+      }
+    });
   } catch (err) {
+    console.error("Login error:", err.message);
     res.status(500).json({ msg: err.message });
   }
+};
+
+export const refreshToken = (req, res) => {
+  const refreshToken = req.body.refreshToken;
+  
+  // Check if refresh token provided
+  if (!refreshToken) {
+    return res.status(401).json({ msg: "Refresh token tidak ditemukan" });
+  }
+  
+  // Check if refresh token is valid
+  if (!refreshTokens.includes(refreshToken)) {
+    return res.status(403).json({ msg: "Refresh token tidak valid" });
+  }
+  
+  // Verify the refresh token
+  jwt.verify(refreshToken, REFRESH_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ msg: "Verifikasi refresh token gagal" });
+    }
+    
+    // Create new access token
+    const accessToken = jwt.sign(
+      { user_id: decoded.user_id, email: decoded.email },
+      ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" }
+    );
+    
+    // Return new access token
+    res.json({ accessToken });
+  });
+};
+
+export const logout = (req, res) => {
+  const refreshToken = req.body.refreshToken;
+  
+  // Remove the refresh token from the list
+  refreshTokens = refreshTokens.filter(token => token !== refreshToken);
+  
+  res.status(200).json({ msg: "Logout berhasil" });
 };

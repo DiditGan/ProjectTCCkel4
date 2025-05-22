@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiOutlineShoppingCart, HiOutlinePhone, HiArrowLeft, HiOutlineLocationMarker } from "react-icons/hi";
 
@@ -45,6 +45,7 @@ const DUMMY_PRODUCT_DETAILS = {
 
 const DetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [activeImage, setActiveImage] = useState(0);
   
   // In a real app, you'd fetch this data from an API
@@ -65,8 +66,16 @@ const DetailPage = () => {
     );
   }
 
-  const contactSeller = () => {
-    window.open(`https://wa.me/${product.sellerContact}?text=Hi! I'm interested in your ${product.name} listing.`, '_blank');
+  const handleContactSeller = () => {
+    // Navigate to messages page, passing seller and product info for context
+    navigate('/messages', { 
+      state: { 
+        recipientName: product.sellerName, 
+        productId: product.id,
+        productName: product.name,
+        // In a real app, you'd pass recipientId instead of name
+      } 
+    });
   };
 
   return (
@@ -145,13 +154,14 @@ const DetailPage = () => {
               <div className="mt-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <button 
+                    onClick={() => navigate('/checkout', { state: { productId: product.id } })}
                     className="bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition flex items-center justify-center"
                   >
                     <HiOutlineShoppingCart className="mr-2" />
                     Beli
                   </button>
                   <button 
-                    onClick={contactSeller}
+                    onClick={handleContactSeller}
                     className="bg-green-100 text-green-800 py-3 px-6 rounded-lg font-medium hover:bg-green-200 transition flex items-center justify-center"
                   >
                     <HiOutlinePhone className="mr-2" />

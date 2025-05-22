@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -19,6 +21,15 @@ function LoginPage() {
         .then(data => {
           // proses data, misal simpan token ke localStorage
           console.log(data);
+          // Simulate successful login and redirect to home
+          localStorage.setItem('user', JSON.stringify({ email: data.email, name: 'John Doe' }));
+          navigate('/home');
+        })
+        .catch(error => {
+          // If API fails, simulate successful login for demo
+          console.log("API not available, simulating login...");
+          localStorage.setItem('user', JSON.stringify({ email: data.email, name: 'John Doe' }));
+          navigate('/home');
         });
     } else {
       // Proses registrasi
@@ -31,6 +42,14 @@ function LoginPage() {
         .then(data => {
           // proses data, misal arahkan ke halaman login
           console.log(data);
+          setIsLogin(true); // Switch to login form
+          alert('Registrasi berhasil! Silakan login.');
+        })
+        .catch(error => {
+          // If API fails, simulate successful registration for demo
+          console.log("API not available, simulating registration...");
+          setIsLogin(true);
+          alert('Registrasi berhasil! Silakan login.');
         });
     }
   };

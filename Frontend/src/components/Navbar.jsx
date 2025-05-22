@@ -1,23 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import logoImage from "../assets/logo.png";
-import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
-import { Link } from "react-router-dom";
-import Profile from "./Profile";
+import { HiOutlineMenu, HiOutlineX, HiOutlineChatAlt2 } from "react-icons/hi";
+import { Link, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const username = "rahel"; // Eventually this should come from auth context or props
-  // Profile image URL - in a real app, this would come from auth context or props
-  const profileImage = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+  const [currentUser, setCurrentUser] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      setCurrentUser(JSON.parse(user));
+    }
+  }, []);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
 
-  const toggleProfile = () => {
-    setShowProfile(!showProfile);
+  const handleProfileClick = () => {
+    if (currentUser) {
+      navigate('/profile');
+    } else {
+      navigate('/'); // Or to a specific login section/page
+    }
+    if (isOpen) setIsOpen(false);
   };
+  
+  const defaultProfileImage = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+
 
   return (
     <nav className="bg-white shadow-md px-6 py-3 fixed w-full z-50">
@@ -35,36 +47,53 @@ const Navbar = () => {
           >
             Home
           </Link>
-          <Link
-            to="/#about"
+          <a // Changed to <a> for smooth scroll on landing page
+            href="/#about"
             className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-300"
           >
             About Us
-          </Link>
-          <Link 
-            to="/manage-products"
-            className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-300"
-          >
-            Kelola Barang
-          </Link>
+          </a>
+          {currentUser && (
+            <Link 
+              to="/manage-products"
+              className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-300"
+            >
+              Kelola Barang
+            </Link>
+          )}
+          {currentUser && (
+            <Link
+              to="/messages"
+              className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-300 flex items-center"
+              title="Messages"
+            >
+              <HiOutlineChatAlt2 className="w-5 h-5 mr-1" />
+              Pesan
+            </Link>
+          )}
           <div className="flex items-center">
             <button 
-              onClick={toggleProfile}
+              onClick={handleProfileClick}
               className="flex items-center space-x-2 bg-green-100 rounded-full pr-4 pl-1 py-1 hover:bg-green-200 transition-colors duration-300"
             >
               <img 
-                src={profileImage} 
+                src={currentUser?.avatar || defaultProfileImage} 
                 alt="Profile" 
                 className="w-8 h-8 rounded-full border-2 border-green-500 object-cover"
               />
               <span className="capitalize text-green-800 font-medium">
-                {username}
+                {currentUser ? currentUser.name || 'Profile' : 'Login'}
               </span>
             </button>
           </div>
         </div>
 
         <div className="md:hidden flex items-center">
+          {currentUser && (
+            <Link to="/messages" className="text-gray-700 hover:text-green-600 mr-4">
+              <HiOutlineChatAlt2 className="w-6 h-6" />
+            </Link>
+          )}
           <button
             onClick={toggleMenu}
             className="text-gray-700 hover:text-green-600 focus:outline-none"
@@ -89,44 +118,40 @@ const Navbar = () => {
             >
               Home
             </Link>
-            <Link
-              to="/#about"
+            <a // Changed to <a> for smooth scroll on landing page
+              href="/#about"
               className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-300"
               onClick={() => setIsOpen(false)}
             >
               About Us
-            </Link>
-            <Link
-              to="/manage-products"
-              className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-300"
-              onClick={() => setIsOpen(false)}
-            >
-              Kelola Barang
-            </Link>
+            </a>
+            {currentUser && (
+              <Link
+                to="/manage-products"
+                className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-300"
+                onClick={() => setIsOpen(false)}
+              >
+                Kelola Barang
+              </Link>
+            )}
             <div className="flex items-center">
               <button
-                onClick={() => {
-                  toggleProfile();
-                  setIsOpen(false);
-                }}
+                onClick={handleProfileClick}
                 className="flex items-center space-x-2 bg-green-100 rounded-full pr-4 pl-1 py-1 hover:bg-green-200 transition-colors duration-300"
               >
                 <img 
-                  src={profileImage} 
+                  src={currentUser?.avatar || defaultProfileImage} 
                   alt="Profile" 
                   className="w-8 h-8 rounded-full border-2 border-green-500 object-cover"
                 />
                 <span className="capitalize text-green-800 font-medium">
-                  {username}
+                  {currentUser ? currentUser.name || 'Profile' : 'Login'}
                 </span>
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Profile Modal */}
-      {showProfile && <Profile onClose={toggleProfile} />}
     </nav>
   );
 };

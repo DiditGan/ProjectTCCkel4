@@ -2,6 +2,7 @@ import grafisImage from '../assets/grafis.png';
 import yedhitImage from '../assets/Yedhit.jpg';
 import Navbar from '../components/Navbar';
 import LoginPage from './LoginPage';
+import { Link } from 'react-router-dom';
 
 function LandingPage() {
   return (
@@ -21,9 +22,9 @@ function LandingPage() {
               sosial dan lingkungan dengan memberikan kemudahan dalam proses pertukaran dan donasi
               barang.
             </p>
-            <button className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+            <Link to="/home" className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md shadow-md transition duration-300 ease-in-out transform hover:scale-105">
               Jelajahi Sekarang
-            </button>
+            </Link>
           </div>
           <div className="w-full lg:w-1/2 flex justify-center">
             <img src={grafisImage} alt="Gambar Grafis" className="max-w-full h-auto rounded-lg shadow-xl" />
