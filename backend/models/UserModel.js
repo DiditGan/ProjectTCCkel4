@@ -28,6 +28,10 @@ const User = db.define("users", {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  address: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
 }, {
   timestamps: false,
 });

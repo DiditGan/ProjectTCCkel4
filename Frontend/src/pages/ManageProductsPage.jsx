@@ -1,52 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { HiOutlinePlus, HiPencil, HiTrash, HiPhotograph, HiX } from "react-icons/hi";
+import { useAuth } from "../contexts/AuthContext";
 
-// Dummy user's products data
-const DUMMY_USER_PRODUCTS = [
-  {
-    id: 101,
-    name: "Vintage Wooden Chair",
-    category: "Furniture",
-    price: "Rp 250.000",
-    priceNumeric: 250000,
-    condition: "Good",
-    description: "This beautiful vintage wooden chair is handcrafted with attention to detail.",
-    status: "available", // available, sold
-    datePosted: "2023-05-15",
-    imageUrl: "https://images.unsplash.com/photo-1503602642458-232111445657?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80",
-    views: 24,
-    interested: 3,
-  },
-  {
-    id: 102,
-    name: "LED Desk Lamp",
-    category: "Electronics",
-    price: "Rp 120.000",
-    priceNumeric: 120000,
-    condition: "Like New",
-    description: "Modern LED desk lamp with adjustable brightness and color temperature.",
-    status: "sold",
-    datePosted: "2023-05-20",
-    imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80",
-    views: 42,
-    interested: 5,
-  },
-  {
-    id: 103,
-    name: "Casual Denim Jacket",
-    category: "Clothing",
-    price: "Rp 175.000",
-    priceNumeric: 175000,
-    condition: "Good",
-    description: "Lightly used denim jacket, perfect for casual outings.",
-    status: "available",
-    datePosted: "2023-06-05",
-    imageUrl: "https://images.unsplash.com/photo-1551028719-00167b16eac5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80",
-    views: 18,
-    interested: 2,
-  },
-];
+// API URL
+const API_BASE_URL = "http://localhost:5000";
 
 // Product categories
 const PRODUCT_CATEGORIES = [
@@ -69,12 +27,15 @@ const PRODUCT_CONDITIONS = [
 ];
 
 const ManageProductsPage = () => {
-  const [products, setProducts] = useState(DUMMY_USER_PRODUCTS);
+  const { currentUser } = useAuth();
+  const [products, setProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all"); // all, available, sold
   const [editingProduct, setEditingProduct] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -84,6 +45,49 @@ const ManageProductsPage = () => {
     description: "",
     images: []
   });
+
+  useEffect(() => {
+    fetchProducts();
+  }, [filterStatus]);
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      // Fix: Use correct API endpoint for getting user's products
+      let url = `${API_BASE_URL}/api/my-barang`;
+      if (filterStatus !== "all") {
+        url += `?status=${filterStatus}`;
+      }
+      
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
+      
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Format price to Rupiah
+  const formatPrice = (price) => {
+    return `Rp ${parseInt(price).toLocaleString('id-ID')}`;
+  };
 
   // Filter products based on status
   const filteredProducts = products.filter(product => {
@@ -103,98 +107,185 @@ const ManageProductsPage = () => {
   // Handle image upload
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const imagePromises = files.map(file => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(imagePromises).then(imagePreviews => {
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+    
+    // Store the actual file for upload
+    setNewProduct(prev => ({
+      ...prev,
+      imageFile: file
+    }));
+    
+    // Create preview for display
+    const reader = new FileReader();
+    reader.onload = (e) => {
       setNewProduct(prev => ({
         ...prev,
-        images: [...prev.images, ...imagePreviews]
+        images: [e.target.result]
       }));
-    });
+    };
+    reader.readAsDataURL(file);
   };
 
   // Remove uploaded image
   const removeImage = (index) => {
     setNewProduct(prev => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: [],
+      imageFile: null
     }));
   };
 
   // Submit new product
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Simple validation
-    if (!newProduct.name || !newProduct.category || !newProduct.price || !newProduct.condition) {
-      alert("Please fill in all required fields.");
-      return;
+    try {
+      // Simple validation
+      if (!newProduct.name || !newProduct.category || !newProduct.price || !newProduct.condition) {
+        alert("Please fill in all required fields.");
+        return;
+      }
+      
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('item_name', newProduct.name);
+      formData.append('category', newProduct.category);
+      formData.append('price', parseFloat(newProduct.price));
+      formData.append('condition', newProduct.condition);
+      formData.append('description', newProduct.description);
+      formData.append('status', "available");
+      
+      // Add the image file if exists
+      if (newProduct.imageFile) {
+        formData.append('image', newProduct.imageFile);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/barang`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || "Failed to create product");
+      }
+      
+      // Reset form and close modal
+      setNewProduct({
+        name: "",
+        category: "",
+        price: "",
+        condition: "",
+        description: "",
+        images: []
+      });
+      setShowAddModal(false);
+      
+      // Refresh products list
+      fetchProducts();
+    } catch (error) {
+      console.error("Error creating product:", error);
+      alert(error.message);
     }
-
-    // Format the price
-    let priceNumeric = Number(newProduct.price);
-    let formattedPrice = `Rp ${priceNumeric.toLocaleString('id-ID')}`;
-
-    // Create new product
-    const createdProduct = {
-      id: Date.now(), // generate unique ID
-      ...newProduct,
-      price: formattedPrice,
-      priceNumeric,
-      status: "available",
-      datePosted: new Date().toISOString().split('T')[0],
-      imageUrl: newProduct.images[0] || "https://via.placeholder.com/300x200?text=No+Image",
-      views: 0,
-      interested: 0
-    };
-
-    // Add to products list
-    setProducts([createdProduct, ...products]);
-
-    // Reset form and close modal
-    setNewProduct({
-      name: "",
-      category: "",
-      price: "",
-      condition: "",
-      description: "",
-      images: []
-    });
-    setShowAddModal(false);
   };
 
   // Handle product status change
-  const toggleProductStatus = (id) => {
-    setProducts(products.map(product => {
-      if (product.id === id) {
-        const newStatus = product.status === "available" ? "sold" : "available";
-        return { ...product, status: newStatus };
+  const toggleProductStatus = async (id) => {
+    try {
+      const product = products.find(p => p.item_id === id);
+      if (!product) return;
+      
+      const newStatus = product.status === "available" ? "sold" : "available";
+      
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
       }
-      return product;
-    }));
+      
+      const response = await fetch(`${API_BASE_URL}/api/barang/${id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || "Failed to update product status");
+      }
+      
+      // Update local state
+      setProducts(products.map(product => {
+        if (product.item_id === id) {
+          return { ...product, status: newStatus };
+        }
+        return product;
+      }));
+    } catch (error) {
+      console.error("Error updating product status:", error);
+      alert(error.message);
+    }
   };
 
   // Delete product
-  const handleDeleteProduct = (id) => {
-    setProducts(products.filter(product => product.id !== id));
-    setShowDeleteConfirm(null);
+  const handleDeleteProduct = async (id) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/barang/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || "Failed to delete product");
+      }
+      
+      // Update local state
+      setProducts(products.filter(product => product.item_id !== id));
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert(error.message);
+    }
   };
 
   // Handle edit product button click
   const handleEditClick = (product) => {
-    const priceValue = product.priceNumeric.toString();
-
     setEditingProduct({
       ...product,
-      price: priceValue,
-      images: product.imageUrl ? [product.imageUrl] : []
+      item_id: product.item_id,
+      name: product.item_name,
+      price: product.price.toString(),
+      images: product.image_url ? [product.image_url] : []
     });
     setShowEditModal(true);
   };
@@ -211,21 +302,37 @@ const ManageProductsPage = () => {
   // Handle image upload for edit form
   const handleEditImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const imagePromises = files.map(file => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(imagePromises).then(imagePreviews => {
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+    
+    // Store the actual file for upload
+    setEditingProduct(prev => ({
+      ...prev,
+      imageFile: file
+    }));
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
       setEditingProduct(prev => ({
         ...prev,
-        images: [...prev.images, ...imagePreviews]
+        images: [e.target.result]
       }));
-    });
+    };
+    reader.readAsDataURL(file);
   };
 
   // Remove uploaded image from edit form
@@ -237,36 +344,56 @@ const ManageProductsPage = () => {
   };
 
   // Submit edited product
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
 
-    // Simple validation
-    if (!editingProduct.name || !editingProduct.category || !editingProduct.price || !editingProduct.condition) {
-      alert("Please fill in all required fields.");
-      return;
-    }
-
-    // Format the price
-    let priceNumeric = Number(editingProduct.price);
-    let formattedPrice = `Rp ${priceNumeric.toLocaleString('id-ID')}`;
-
-    // Update the product in the state
-    const updatedProducts = products.map(product => {
-      if (product.id === editingProduct.id) {
-        return {
-          ...editingProduct,
-          price: formattedPrice,
-          priceNumeric,
-          imageUrl: editingProduct.images[0] || product.imageUrl || "https://via.placeholder.com/300x200?text=No+Image"
-        };
+    try {
+      // Simple validation
+      if (!editingProduct.name || !editingProduct.category || !editingProduct.price || !editingProduct.condition) {
+        alert("Please fill in all required fields.");
+        return;
       }
-      return product;
-    });
-
-    // Update state and close modal
-    setProducts(updatedProducts);
-    setShowEditModal(false);
-    setEditingProduct(null);
+      
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('item_name', editingProduct.name);
+      formData.append('category', editingProduct.category);
+      formData.append('price', parseFloat(editingProduct.price));
+      formData.append('condition', editingProduct.condition);
+      formData.append('description', editingProduct.description);
+      formData.append('status', editingProduct.status);
+      
+      // Add the image file if exists
+      if (editingProduct.imageFile) {
+        formData.append('image', editingProduct.imageFile);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/barang/${editingProduct.item_id}`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || "Failed to update product");
+      }
+      
+      // Close modal and refresh products
+      setShowEditModal(false);
+      setEditingProduct(null);
+      fetchProducts();
+    } catch (error) {
+      console.error("Error updating product:", error);
+      alert(error.message);
+    }
   };
 
   return (
@@ -322,99 +449,123 @@ const ManageProductsPage = () => {
 
         {/* Products Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Produk
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Harga
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statistik
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tanggal
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0 mr-3">
-                            <img className="h-10 w-10 rounded-md object-cover" src={product.imageUrl} alt={product.name} />
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading products...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500 mb-4">Error: {error}</p>
+              <button 
+                onClick={fetchProducts}
+                className="bg-green-600 text-white px-4 py-2 rounded-md"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Produk
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Harga
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statistik
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tanggal
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
+                      <tr key={product.item_id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 flex-shrink-0 mr-3">
+                              <img 
+                                className="h-10 w-10 rounded-md object-cover" 
+                                src={product.image_url ? `${API_BASE_URL}${product.image_url}` : "https://via.placeholder.com/40?text=No+Image"} 
+                                alt={product.item_name} 
+                                onError={(e) => {
+                                  e.target.src = "https://via.placeholder.com/40?text=No+Image";
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{product.item_name}</div>
+                              <div className="text-sm text-gray-500">{product.category}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                            <div className="text-sm text-gray-500">{product.category}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 font-medium">{product.price}</div>
-                        <div className="text-sm text-gray-500">{product.condition}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          product.status === "available" 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-gray-100 text-gray-800"
-                        }`}>
-                          {product.status === "available" ? "Tersedia" : "Terjual"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div>Dilihat: {product.views}</div>
-                        <div>Tertarik: {product.interested}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.datePosted}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button 
-                          onClick={() => toggleProductStatus(product.id)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
-                        >
-                          {product.status === "available" ? "Tandai Terjual" : "Tandai Tersedia"}
-                        </button>
-                        <button 
-                          onClick={() => handleEditClick(product)}
-                          className="text-green-600 hover:text-green-900 mr-3"
-                          title="Edit"
-                        >
-                          <HiPencil />
-                        </button>
-                        <button 
-                          onClick={() => setShowDeleteConfirm(product.id)}
-                          className="text-red-600 hover:text-red-900" 
-                          title="Delete"
-                        >
-                          <HiTrash />
-                        </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 font-medium">{formatPrice(product.price)}</div>
+                          <div className="text-sm text-gray-500">{product.condition}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            product.status === "available" 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {product.status === "available" ? "Tersedia" : "Terjual"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div>Dilihat: {product.views || 0}</div>
+                          <div>Tertarik: {product.interested_count || 0}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(product.date_posted).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button 
+                            onClick={() => toggleProductStatus(product.item_id)}
+                            className="text-blue-600 hover:text-blue-900 mr-3"
+                          >
+                            {product.status === "available" ? "Tandai Terjual" : "Tandai Tersedia"}
+                          </button>
+                          <button 
+                            onClick={() => handleEditClick(product)}
+                            className="text-green-600 hover:text-green-900 mr-3"
+                            title="Edit"
+                          >
+                            <HiPencil />
+                          </button>
+                          <button 
+                            onClick={() => setShowDeleteConfirm(product.item_id)}
+                            className="text-red-600 hover:text-red-900" 
+                            title="Delete"
+                          >
+                            <HiTrash />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                        Tidak ada barang yang ditemukan
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
-                      Tidak ada barang yang ditemukan
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

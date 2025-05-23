@@ -1,84 +1,50 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { HiUser, HiShoppingBag, HiClipboardList, HiCog, HiLogout, HiEye } from "react-icons/hi";
+import { HiUser, HiShoppingBag, HiClipboardList, HiCog, HiLogout, HiEye, HiOutlinePhotograph } from "react-icons/hi";
+import { useAuth } from "../contexts/AuthContext";
 
-// Dummy user data
-const DUMMY_USER = {
-  id: 1,
-  name: "John Doe",
-  email: "john.doe@email.com",
-  phone: "08123456789",
-  address: "Jl. Sudirman No. 123, Jakarta Pusat",
-  joinDate: "2023-01-15",
-  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=240&q=80"
-};
-
-// Dummy transaction history
-const DUMMY_TRANSACTIONS = [
-  {
-    id: "TRX001",
-    type: "purchase",
-    product: {
-      name: "Vintage Wooden Chair",
-      imageUrl: "https://images.unsplash.com/photo-1503602642458-232111445657?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80",
-      seller: "Budi Santoso"
-    },
-    quantity: 1,
-    total: 250000,
-    status: "completed",
-    date: "2023-06-15",
-    paymentMethod: "Transfer Bank"
-  },
-  {
-    id: "TRX002",
-    type: "purchase", 
-    product: {
-      name: "LED Desk Lamp",
-      imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80",
-      seller: "Anita Wijaya"
-    },
-    quantity: 1,
-    total: 122500,
-    status: "pending",
-    date: "2023-06-20",
-    paymentMethod: "E-Wallet (OVO)"
-  }
-];
-
-// Dummy sales history 
-const DUMMY_SALES = [
-  {
-    id: "SALE001",
-    product: {
-      name: "Novel Collection (Set of 5)",
-      imageUrl: "https://images.unsplash.com/photo-1512820790803-83ca734da794?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80"
-    },
-    buyer: "Sarah Johnson",
-    quantity: 1,
-    total: 200000,
-    status: "sold",
-    date: "2023-06-10"
-  }
-];
+// Define the API base URL for real API calls
+const API_BASE_URL = "http://localhost:5000";
 
 const ProfilePage = () => {
+  const { currentUser, logout } = useAuth();
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [sales, setSales] = useState([]);
   const [activeTab, setActiveTab] = useState("purchases");
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({});
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Simulate API calls
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setIsLoading(true);
         
-        setUser(DUMMY_USER);
-        setTransactions(DUMMY_TRANSACTIONS);
-        setSales(DUMMY_SALES);
+        // Fetch real user profile data
+        const userResponse = await fetchUserProfile();
+        setUser(userResponse);
+        setEditData({
+          name: userResponse.name,
+          email: userResponse.email,
+          phone: userResponse.phone_number || "",
+          address: userResponse.address || ""
+        });
+        
+        // Fetch real transactions (purchases)
+        const transactionsResponse = await fetchTransactions("purchase");
+        setTransactions(transactionsResponse);
+        
+        // Fetch real sales
+        const salesResponse = await fetchTransactions("sale");
+        setSales(salesResponse);
       } catch (error) {
         console.error("Error fetching user data:", error);
       } finally {
@@ -87,15 +53,166 @@ const ProfilePage = () => {
     };
 
     fetchUserData();
-  }, []);
+  }, [currentUser]);
+
+  // Fetch real user profile from API
+  const fetchUserProfile = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error("Authentication token not found");
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/api/profile`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch user profile");
+    }
+    
+    return await response.json();
+  };
+
+  // Fetch real transactions from API
+  const fetchTransactions = async (type) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error("Authentication token not found");
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/api/transaksi?type=${type}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${type} transactions`);
+    }
+    
+    return await response.json();
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem('user'); // Clear user session
-    navigate('/'); // Redirect to landing page
-    // Optionally, you might want to refresh the window or trigger a state update in App.jsx
-    // to ensure Navbar updates immediately if it relies on App-level state for user info.
-    // For now, localStorage change should be picked up by Navbar on next render or useEffect.
-    window.location.reload(); // Force reload to update Navbar state
+    logout();
+    navigate('/');
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Helper function to get full profile image URL
+  const getProfileImageUrl = (imagePath) => {
+    if (!imagePath) return "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${API_BASE_URL}${imagePath}`;
+  };
+
+  // Handle profile image upload
+  const handleProfileImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Reset previous error messages
+    setProfileError("");
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setProfileError('File harus berupa gambar (JPEG, PNG, GIF)');
+      return;
+    }
+    
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      setProfileError('Ukuran file tidak boleh lebih dari 2MB');
+      return;
+    }
+    
+    setProfileImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+    
+    console.log("Profile image selected:", file.name, file.type, `${(file.size / 1024).toFixed(2)} KB`);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setProfileError("");
+      setProfileSuccess("");
+      setIsSubmitting(true);
+      
+      // Validate form data
+      if (!editData.name || !editData.email) {
+        setProfileError("Nama dan email wajib diisi");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        // Use FormData for file upload
+        const formData = new FormData();
+        formData.append('name', editData.name);
+        formData.append('email', editData.email);
+        formData.append('phone_number', editData.phone);
+        formData.append('address', editData.address);
+        
+        // Add profile image file if selected
+        if (profileImageFile) {
+          formData.append('profileImage', profileImageFile);
+          console.log("Uploading profile image:", profileImageFile.name);
+        }
+        
+        // Log form data for debugging
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value instanceof File ? value.name : value}`);
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/api/profile`, {
+          method: 'PUT',
+          headers: { 
+            'Authorization': `Bearer ${token}`
+            // Don't set Content-Type for FormData
+          },
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.msg || "Failed to update profile");
+        }
+        
+        console.log("Profile updated successfully:", data);
+        
+        // Update local user state with new data
+        setUser(data.user);
+        setEditData({
+          name: data.user.name,
+          email: data.user.email,
+          phone: data.user.phone_number || "",
+          address: data.user.address || ""
+        });
+        
+        setProfileSuccess("Profil berhasil diperbarui");
+        setIsEditing(false);
+        setProfileImageFile(null);
+        setImagePreview(null);
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setProfileError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -105,19 +222,26 @@ const ProfilePage = () => {
       cancelled: "bg-red-100 text-red-800",
       sold: "bg-blue-100 text-blue-800"
     };
-
-    const labels = {
-      completed: "Selesai",
-      pending: "Menunggu",
-      cancelled: "Dibatalkan", 
-      sold: "Terjual"
-    };
-
+    
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-        {labels[status]}
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || "bg-gray-100 text-gray-800"}`}>
+        {status === "completed" ? "Selesai" : 
+         status === "pending" ? "Menunggu" : 
+         status === "cancelled" ? "Dibatalkan" : 
+         status === "sold" ? "Terjual" : status}
       </span>
     );
+  };
+
+  // Format date from ISO string to local format
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
   };
 
   if (isLoading) {
@@ -126,7 +250,7 @@ const ProfilePage = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Memuat profil...</p>
+          <p className="mt-4 text-gray-600">Memuat data...</p>
         </div>
       </div>
     );
@@ -136,266 +260,417 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      <div className="h-16"></div>
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              {/* User Info */}
-              <div className="p-6 text-center border-b">
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
-                />
-                <h3 className="font-semibold text-gray-800">{user.name}</h3>
-                <p className="text-sm text-gray-600">{user.email}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Bergabung sejak {new Date(user.joinDate).toLocaleDateString('id-ID')}
-                </p>
-              </div>
-
-              {/* Navigation Menu */}
-              <nav className="p-4">
-                <ul className="space-y-2">
-                  <li>
-                    <button
-                      onClick={() => setActiveTab("purchases")}
-                      className={`w-full flex items-center px-3 py-2 rounded-md text-left transition ${
-                        activeTab === "purchases"
-                          ? "bg-green-100 text-green-800"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      <HiShoppingBag className="mr-3" />
-                      Riwayat Pembelian
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => setActiveTab("sales")}
-                      className={`w-full flex items-center px-3 py-2 rounded-md text-left transition ${
-                        activeTab === "sales"
-                          ? "bg-green-100 text-green-800"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      <HiClipboardList className="mr-3" />
-                      Riwayat Penjualan
-                    </button>
-                  </li>
-                  <li>
-                    <Link
-                      to="/manage-products"
-                      className="w-full flex items-center px-3 py-2 rounded-md text-left text-gray-700 hover:bg-gray-100 transition"
-                    >
-                      <HiCog className="mr-3" />
-                      Kelola Barang
-                    </Link>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => setActiveTab("settings")}
-                      className={`w-full flex items-center px-3 py-2 rounded-md text-left transition ${
-                        activeTab === "settings"
-                          ? "bg-green-100 text-green-800"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      <HiUser className="mr-3" />
-                      Pengaturan Profil
-                    </button>
-                  </li>
-                  <li className="border-t pt-2 mt-2">
-                    <button 
-                      onClick={handleLogout}
-                      className="w-full flex items-center px-3 py-2 rounded-md text-left text-red-600 hover:bg-red-50 transition"
-                    >
-                      <HiLogout className="mr-3" />
-                      Logout
-                    </button>
-                  </li>
-                </ul>
-              </nav>
-            </div>
+      <div className="pt-20 pb-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-800">Profil Saya</h1>
+            <p className="text-gray-600">Kelola akun dan aktivitas Anda di GiveTzy</p>
           </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {/* Purchase History */}
-            {activeTab === "purchases" && (
-              <div className="bg-white rounded-lg shadow-md">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-semibold text-gray-800">Riwayat Pembelian</h2>
-                </div>
-                <div className="p-6">
-                  {transactions.length > 0 ? (
-                    <div className="space-y-4">
-                      {transactions.map(transaction => (
-                        <div key={transaction.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center">
-                              <span className="text-sm font-medium text-gray-800">#{transaction.id}</span>
-                              <span className="mx-2 text-gray-400">•</span>
-                              <span className="text-sm text-gray-600">{transaction.date}</span>
-                            </div>
-                            {getStatusBadge(transaction.status)}
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <img
-                              src={transaction.product.imageUrl}
-                              alt={transaction.product.name}
-                              className="w-16 h-16 object-cover rounded-md mr-4"
-                            />
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-800">{transaction.product.name}</h4>
-                              <p className="text-sm text-gray-600">Penjual: {transaction.product.seller}</p>
-                              <p className="text-sm text-gray-600">Jumlah: {transaction.quantity}</p>
-                              <p className="text-sm text-gray-600">Pembayaran: {transaction.paymentMethod}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-green-600">
-                                Rp {transaction.total.toLocaleString('id-ID')}
-                              </p>
-                              <button className="text-sm text-blue-600 hover:text-blue-800 mt-1">
-                                Lihat Detail
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <HiShoppingBag className="text-6xl text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-600">Belum ada riwayat pembelian</p>
-                      <Link to="/home" className="text-green-600 hover:text-green-800 font-medium mt-2 inline-block">
-                        Mulai Belanja
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Sales History */}
-            {activeTab === "sales" && (
-              <div className="bg-white rounded-lg shadow-md">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-semibold text-gray-800">Riwayat Penjualan</h2>
-                </div>
-                <div className="p-6">
-                  {sales.length > 0 ? (
-                    <div className="space-y-4">
-                      {sales.map(sale => (
-                        <div key={sale.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center">
-                              <span className="text-sm font-medium text-gray-800">#{sale.id}</span>
-                              <span className="mx-2 text-gray-400">•</span>
-                              <span className="text-sm text-gray-600">{sale.date}</span>
-                            </div>
-                            {getStatusBadge(sale.status)}
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <img
-                              src={sale.product.imageUrl}
-                              alt={sale.product.name}
-                              className="w-16 h-16 object-cover rounded-md mr-4"
-                            />
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-800">{sale.product.name}</h4>
-                              <p className="text-sm text-gray-600">Pembeli: {sale.buyer}</p>
-                              <p className="text-sm text-gray-600">Jumlah: {sale.quantity}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-green-600">
-                                Rp {sale.total.toLocaleString('id-ID')}
-                              </p>
-                              <button className="text-sm text-blue-600 hover:text-blue-800 mt-1">
-                                Lihat Detail
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <HiClipboardList className="text-6xl text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-600">Belum ada penjualan</p>
-                      <Link to="/manage-products" className="text-green-600 hover:text-green-800 font-medium mt-2 inline-block">
-                        Jual Barang Pertama
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Profile Settings */}
-            {activeTab === "settings" && (
-              <div className="bg-white rounded-lg shadow-md">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-semibold text-gray-800">Pengaturan Profil</h2>
-                </div>
-                <div className="p-6">
-                  <form className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Nama Lengkap
-                        </label>
-                        <input
-                          type="text"
-                          defaultValue={user.name}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
-                        />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                {/* User Info in Sidebar */}
+                <div className="p-6 text-center border-b">
+                  <div className="relative inline-block mb-3">
+                    <img
+                      src={imagePreview || getProfileImageUrl(user.profile_picture)}
+                      alt={user.name}
+                      className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-green-100"
+                      onError={(e) => {
+                        e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+                      }}
+                    />
+                    {isEditing && activeTab === "settings" && (
+                      <div className="absolute bottom-0 right-0 w-full h-full flex items-center justify-center bg-black bg-opacity-40 rounded-full opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                        <span className="text-white text-xs font-medium">Edit Foto</span>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          defaultValue={user.email}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nomor Telepon
-                      </label>
-                      <input
-                        type="tel"
-                        defaultValue={user.phone}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Alamat
-                      </label>
-                      <textarea
-                        defaultValue={user.address}
-                        rows="3"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
-                      ></textarea>
-                    </div>
-                    <div className="flex justify-end">
-                      <button className="px-4 py-2 bg-green-600 text-white rounded-md shadow-md hover:bg-green-700 transition">
-                        Simpan Perubahan
+                    )}
+                  </div>
+                  <h3 className="font-bold text-xl text-gray-800">{user.name}</h3>
+                  <p className="text-sm text-gray-600">{user.email}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Bergabung sejak {formatDate(user.createdAt || user.created_at || new Date().toISOString())}
+                  </p>
+                </div>
+
+                {/* Navigation Menu */}
+                <nav className="p-4">
+                  <ul className="space-y-2">
+                    <li>
+                      <button
+                        onClick={() => setActiveTab("purchases")}
+                        className={`w-full flex items-center px-3 py-2 rounded-md text-left transition ${
+                          activeTab === "purchases"
+                            ? "bg-green-100 text-green-800"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <HiShoppingBag className="mr-3" />
+                        Riwayat Pembelian
                       </button>
-                    </div>
-                  </form>
-                </div>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => setActiveTab("sales")}
+                        className={`w-full flex items-center px-3 py-2 rounded-md text-left transition ${
+                          activeTab === "sales"
+                            ? "bg-green-100 text-green-800"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <HiClipboardList className="mr-3" />
+                        Riwayat Penjualan
+                      </button>
+                    </li>
+                    <li>
+                      <Link
+                        to="/manage-products"
+                        className="w-full flex items-center px-3 py-2 rounded-md text-left text-gray-700 hover:bg-gray-100 transition"
+                      >
+                        <HiCog className="mr-3" />
+                        Kelola Barang
+                      </Link>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => setActiveTab("settings")}
+                        className={`w-full flex items-center px-3 py-2 rounded-md text-left transition ${
+                          activeTab === "settings"
+                            ? "bg-green-100 text-green-800"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <HiUser className="mr-3" />
+                        Pengaturan Profil
+                      </button>
+                    </li>
+                    <li className="border-t pt-2 mt-2">
+                      <button 
+                        onClick={handleLogout}
+                        className="w-full flex items-center px-3 py-2 rounded-md text-left text-red-600 hover:bg-red-50 transition"
+                      >
+                        <HiLogout className="mr-3" />
+                        Logout
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
               </div>
-            )}
+            </div>
+
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+              {/* Purchase History */}
+              {activeTab === "purchases" && (
+                <div className="bg-white rounded-lg shadow-md">
+                  <div className="p-6 border-b">
+                    <h2 className="text-xl font-semibold text-gray-800">Riwayat Pembelian</h2>
+                  </div>
+                  <div className="p-6">
+                    {transactions && transactions.length > 0 ? (
+                      <div className="space-y-4">
+                        {transactions.map(transaction => (
+                          <div key={transaction.transaction_id || transaction.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center">
+                                <span className="text-sm font-medium text-gray-800">#{transaction.transaction_id || transaction.id}</span>
+                                <span className="mx-2 text-gray-400">•</span>
+                                <span className="text-sm text-gray-600">{formatDate(transaction.transaction_date || transaction.date)}</span>
+                              </div>
+                              {getStatusBadge(transaction.status)}
+                            </div>
+                            
+                            <div className="flex items-center">
+                              <img
+                                src={getProfileImageUrl(transaction.item?.image_url || transaction.product?.imageUrl)}
+                                alt={transaction.item?.item_name || transaction.product?.name}
+                                className="w-16 h-16 object-cover rounded-md mr-4"
+                                onError={(e) => {
+                                  e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                                }}
+                              />
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-800">{transaction.item?.item_name || transaction.product?.name}</h4>
+                                <p className="text-sm text-gray-600">
+                                  Penjual: {transaction.seller?.name || transaction.product?.seller || '-'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Jumlah: {transaction.quantity || 1}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Pembayaran: {transaction.payment_method || transaction.paymentMethod || 'Cash'}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold text-green-600">
+                                  Rp {(transaction.total_price || transaction.total || 0).toLocaleString('id-ID')}
+                                </p>
+                                <button className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center justify-end">
+                                  <span>Lihat Detail</span>
+                                  <HiEye className="ml-1" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <HiShoppingBag className="text-6xl text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-600">Belum ada riwayat pembelian</p>
+                        <Link to="/home" className="text-green-600 hover:text-green-800 font-medium mt-2 inline-block">
+                          Mulai Belanja
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Sales History */}
+              {activeTab === "sales" && (
+                <div className="bg-white rounded-lg shadow-md">
+                  <div className="p-6 border-b">
+                    <h2 className="text-xl font-semibold text-gray-800">Riwayat Penjualan</h2>
+                  </div>
+                  <div className="p-6">
+                    {sales && sales.length > 0 ? (
+                      <div className="space-y-4">
+                        {sales.map(sale => (
+                          <div key={sale.transaction_id || sale.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center">
+                                <span className="text-sm font-medium text-gray-800">#{sale.transaction_id || sale.id}</span>
+                                <span className="mx-2 text-gray-400">•</span>
+                                <span className="text-sm text-gray-600">{formatDate(sale.transaction_date || sale.date)}</span>
+                              </div>
+                              {getStatusBadge(sale.status)}
+                            </div>
+                            
+                            <div className="flex items-center">
+                              <img
+                                src={getProfileImageUrl(sale.item?.image_url || sale.product?.imageUrl)}
+                                alt={sale.item?.item_name || sale.product?.name}
+                                className="w-16 h-16 object-cover rounded-md mr-4"
+                                onError={(e) => {
+                                  e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                                }}
+                              />
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-800">{sale.item?.item_name || sale.product?.name}</h4>
+                                <p className="text-sm text-gray-600">
+                                  Pembeli: {sale.buyer?.name || sale.buyer || '-'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Jumlah: {sale.quantity || 1}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold text-green-600">
+                                  Rp {(sale.total_price || sale.total || 0).toLocaleString('id-ID')}
+                                </p>
+                                <button className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center justify-end">
+                                  <span>Lihat Detail</span>
+                                  <HiEye className="ml-1" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <HiClipboardList className="text-6xl text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-600">Belum ada penjualan</p>
+                        <Link to="/manage-products" className="text-green-600 hover:text-green-800 font-medium mt-2 inline-block">
+                          Jual Barang Pertama
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Profile Settings */}
+              {activeTab === "settings" && (
+                <div className="bg-white rounded-lg shadow-md">
+                  <div className="p-6 border-b flex justify-between items-center">
+                    <h2 className="text-xl font-semibold text-gray-800">Pengaturan Profil</h2>
+                    {!isEditing && (
+                      <button 
+                        onClick={() => setIsEditing(true)}
+                        className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 transition"
+                      >
+                        Edit Profil
+                      </button>
+                    )}
+                  </div>
+                  <div className="p-6">
+                    {profileError && (
+                      <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
+                        {profileError}
+                      </div>
+                    )}
+                    
+                    {profileSuccess && (
+                      <div className="mb-4 p-3 bg-green-100 border-l-4 border-green-500 text-green-700">
+                        {profileSuccess}
+                      </div>
+                    )}
+                    
+                    {/* Profile Image Upload Section */}
+                    {isEditing && (
+                      <div className="mb-6 flex flex-col items-center">
+                        <div className="relative">
+                          <img
+                            src={imagePreview || getProfileImageUrl(user.profile_picture)}
+                            alt={user.name}
+                            className="w-32 h-32 rounded-full object-cover border-4 border-green-100"
+                            onError={(e) => {
+                              e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+                            }}
+                          />
+                          <label className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full p-3 cursor-pointer shadow-lg hover:bg-green-700 transition-colors">
+                            <HiOutlinePhotograph className="w-5 h-5" />
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*" 
+                              onChange={handleProfileImageUpload}
+                            />
+                          </label>
+                        </div>
+                        <p className="mt-3 text-sm text-gray-600">Klik ikon kamera untuk mengganti foto profil</p>
+                        {profileImageFile && (
+                          <div className="text-xs text-green-600 mt-1">
+                            {profileImageFile.name} ({(profileImageFile.size/1024).toFixed(1)} KB)
+                            <button 
+                              onClick={() => {
+                                setProfileImageFile(null);
+                                setImagePreview(null);
+                              }}
+                              className="ml-2 text-red-500 hover:text-red-700"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Nama Lengkap
+                          </label>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              name="name"
+                              value={editData.name}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
+                            />
+                          ) : (
+                            <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user.name}</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                          </label>
+                          {isEditing ? (
+                            <input
+                              type="email"
+                              name="email"
+                              value={editData.email}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
+                            />
+                          ) : (
+                            <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user.email}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nomor Telepon
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={editData.phone}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
+                          />
+                        ) : (
+                          <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user.phone_number || '-'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Alamat
+                        </label>
+                        {isEditing ? (
+                          <textarea
+                            name="address"
+                            value={editData.address}
+                            onChange={handleInputChange}
+                            rows="3"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
+                          ></textarea>
+                        ) : (
+                          <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user.address || '-'}</p>
+                        )}
+                      </div>
+                      
+                      {isEditing && (
+                        <div className="flex justify-end space-x-3 pt-3">
+                          <button 
+                            onClick={() => {
+                              setIsEditing(false);
+                              setProfileError("");
+                              setProfileSuccess("");
+                              setProfileImageFile(null);
+                              setImagePreview(null);
+                              // Reset form data
+                              setEditData({
+                                name: user.name,
+                                email: user.email,
+                                phone: user.phone_number || "",
+                                address: user.address || ""
+                              });
+                            }}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
+                            disabled={isSubmitting}
+                          >
+                            Batal
+                          </button>
+                          <button 
+                            onClick={handleSaveProfile}
+                            className={`px-4 py-2 bg-green-600 text-white rounded-md shadow-md hover:bg-green-700 transition flex items-center ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting && (
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            )}
+                            {isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -2,118 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiPaperAirplane, HiPhotograph, HiDotsVertical } from "react-icons/hi";
+import { useAuth } from "../contexts/AuthContext";
 
-// Dummy conversations data
-const DUMMY_CONVERSATIONS = [
-  {
-    id: 1,
-    participant: {
-      name: "Budi Santoso",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=240&q=80"
-    },
-    product: {
-      name: "Vintage Wooden Chair",
-      imageUrl: "https://images.unsplash.com/photo-1503602642458-232111445657?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80"
-    },
-    lastMessage: {
-      text: "Barang masih tersedia, silakan datang untuk lihat langsung",
-      timestamp: "10:30",
-      sender: "other"
-    },
-    unreadCount: 2
-  },
-  {
-    id: 2,
-    participant: {
-      name: "Anita Wijaya",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=240&q=80"
-    },
-    product: {
-      name: "LED Desk Lamp",
-      imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80"
-    },
-    lastMessage: {
-      text: "Terima kasih sudah beli, semoga berguna ya",
-      timestamp: "09:15",
-      sender: "other"
-    },
-    unreadCount: 0
-  }
-];
-
-// Dummy messages for active conversation
-const DUMMY_MESSAGES = {
-  1: [
-    {
-      id: 1,
-      text: "Halo, saya tertarik dengan kursi kayunya. Kondisinya masih bagus?",
-      timestamp: "10:15",
-      sender: "me"
-    },
-    {
-      id: 2,
-      text: "Halo! Iya masih bagus kok, hanya ada bekas goresan kecil di kaki kursi tapi tidak mengganggu",
-      timestamp: "10:18",
-      sender: "other"
-    },
-    {
-      id: 3,
-      text: "Boleh nego harganya? Bagaimana kalau 200rb?",
-      timestamp: "10:20",
-      sender: "me"
-    },
-    {
-      id: 4,
-      text: "Waduh harga segitu masih belum bisa, minimal 230rb deh",
-      timestamp: "10:25",
-      sender: "other"
-    },
-    {
-      id: 5,
-      text: "Oke deal 230rb. Barang masih tersedia kan?",
-      timestamp: "10:28",
-      sender: "me"
-    },
-    {
-      id: 6,
-      text: "Barang masih tersedia, silakan datang untuk lihat langsung",
-      timestamp: "10:30",
-      sender: "other"
-    }
-  ],
-  2: [
-    {
-      id: 1,
-      text: "Halo, lampu meja LED nya masih ada?",
-      timestamp: "08:30",
-      sender: "me"
-    },
-    {
-      id: 2,
-      text: "Masih ada kok. Kondisi seperti baru, masih ada dus nya juga",
-      timestamp: "08:35",
-      sender: "other"
-    },
-    {
-      id: 3,
-      text: "Oke saya ambil. Bisa COD?",
-      timestamp: "08:40",
-      sender: "me"
-    },
-    {
-      id: 4,
-      text: "Bisa, nanti saya info alamatnya ya",
-      timestamp: "08:45",
-      sender: "other"
-    },
-    {
-      id: 5,
-      text: "Terima kasih sudah beli, semoga berguna ya",
-      timestamp: "09:15",
-      sender: "other"
-    }
-  ]
-};
+// API URL
+const API_BASE_URL = "http://localhost:5000";
 
 const MessagesPage = () => {
   const [conversations, setConversations] = useState([]);
@@ -123,47 +15,78 @@ const MessagesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef(null);
   const location = useLocation();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setIsLoading(true);
         
-        let initialConversations = DUMMY_CONVERSATIONS;
-        let initialActiveConversation = initialConversations.length > 0 ? initialConversations[0] : null;
-        let initialMessages = initialActiveConversation ? DUMMY_MESSAGES[initialActiveConversation.id] : [];
-
-        const routeState = location.state;
-        if (routeState?.recipientName && routeState?.productId) {
-          // Check if a conversation with this recipient/product already exists
-          const existingConv = initialConversations.find(
-            conv => conv.participant.name === routeState.recipientName && conv.product.id === routeState.productId
+        // Fetch conversations from API
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          throw new Error("Authentication token not found");
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/api/conversations`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch conversations");
+        }
+        
+        let conversationsData = await response.json();
+        
+        // If we have route state with recipient/product info, check for existing conversation or create new one
+        if (location.state?.recipientName && location.state?.productId) {
+          // Check if we have an existing conversation about this product
+          const existingConv = conversationsData.find(
+            conv => conv.product?.item_id === location.state.productId
           );
 
           if (existingConv) {
-            initialActiveConversation = existingConv;
-            initialMessages = DUMMY_MESSAGES[existingConv.id] || [];
+            setActiveConversation(existingConv);
+            await fetchMessages(existingConv.conversation_id);
           } else {
-            // Create a new dummy conversation if it doesn't exist (for demo purposes)
-            const newConv = {
-              id: Date.now(), // Unique ID
-              participant: { name: routeState.recipientName, avatar: "https://via.placeholder.com/150" },
-              product: { id: routeState.productId, name: routeState.productName, imageUrl: "https://via.placeholder.com/150" },
-              lastMessage: { text: `Regarding: ${routeState.productName}`, timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), sender: "system" },
-              unreadCount: 0
-            };
-            initialConversations = [newConv, ...initialConversations];
-            DUMMY_MESSAGES[newConv.id] = [{ id: 1, text: `Starting chat about ${routeState.productName}`, timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), sender: "system" }];
-            initialActiveConversation = newConv;
-            initialMessages = DUMMY_MESSAGES[newConv.id];
+            // Create a new conversation
+            const createResponse = await fetch(`${API_BASE_URL}/api/conversations/new`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                recipient_id: location.state.recipientId,
+                product_id: location.state.productId,
+                content: `Hello, I'm interested in ${location.state.productName}`
+              })
+            });
+            
+            if (!createResponse.ok) {
+              throw new Error("Failed to create new conversation");
+            }
+            
+            // Fetch updated conversations list
+            const updatedResponse = await fetch(`${API_BASE_URL}/api/conversations`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            conversationsData = await updatedResponse.json();
+            
+            // Set first conversation as active
+            if (conversationsData.length > 0) {
+              setActiveConversation(conversationsData[0]);
+              await fetchMessages(conversationsData[0].conversation_id);
+            }
           }
+        } else if (conversationsData.length > 0) {
+          // Set first conversation as active by default
+          setActiveConversation(conversationsData[0]);
+          await fetchMessages(conversationsData[0].conversation_id);
         }
         
-        setConversations(initialConversations);
-        setActiveConversation(initialActiveConversation);
-        setMessages(initialMessages);
-
+        setConversations(conversationsData);
       } catch (error) {
         console.error("Error fetching conversations:", error);
       } finally {
@@ -174,71 +97,109 @@ const MessagesPage = () => {
     fetchConversations();
   }, [location.state]);
 
+  const fetchMessages = async (conversationId) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/messages`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch messages");
+      }
+      
+      const messagesData = await response.json();
+      setMessages(messagesData);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleConversationClick = (conversation) => {
     setActiveConversation(conversation);
-    setMessages(DUMMY_MESSAGES[conversation.id] || []);
+    fetchMessages(conversation.conversation_id);
     
-    // Mark as read (remove unread count)
+    // Mark as read (API call would be ideal here)
     setConversations(prev => 
       prev.map(conv => 
-        conv.id === conversation.id 
+        conv.conversation_id === conversation.conversation_id 
           ? { ...conv, unreadCount: 0 }
           : conv
       )
     );
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !activeConversation) return;
 
-    const message = {
-      id: messages.length + 1,
-      text: newMessage,
-      timestamp: new Date().toLocaleTimeString('id-ID', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      sender: "me"
-    };
-
-    setMessages(prev => [...prev, message]);
-    setNewMessage("");
-
-    // Update last message in conversation list
-    setConversations(prev =>
-      prev.map(conv =>
-        conv.id === activeConversation.id
-          ? { 
-              ...conv, 
-              lastMessage: { 
-                ...message, 
-                sender: "me" 
-              } 
-            }
-          : conv
-      )
-    );
-
-    // Simulate seller response after 2 seconds
-    setTimeout(() => {
-      const response = {
-        id: messages.length + 2,
-        text: "Baik, saya akan bantu jawab pertanyaan Anda",
-        timestamp: new Date().toLocaleTimeString('id-ID', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        sender: "other"
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${activeConversation.conversation_id}/messages`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: newMessage })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+      
+      // Get the new message from the response
+      const messageData = await response.json();
+      
+      // Add sender info to the message
+      const messageWithSender = {
+        ...messageData,
+        sender: {
+          user_id: currentUser.user_id,
+          name: currentUser.name
+        }
       };
       
-      setMessages(prev => [...prev, response]);
-    }, 2000);
+      // Update messages state
+      setMessages(prev => [...prev, messageWithSender]);
+      
+      // Clear input
+      setNewMessage("");
+      
+      // Update last message in conversation list
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.conversation_id === activeConversation.conversation_id
+            ? { 
+                ...conv, 
+                lastMessage: { 
+                  content: newMessage,
+                  timestamp: new Date(),
+                  sender_id: currentUser.user_id
+                } 
+              }
+            : conv
+        )
+      );
+      
+      // Fetch updated messages to get any server-side changes
+      fetchMessages(activeConversation.conversation_id);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   };
 
   if (isLoading) {

@@ -5,17 +5,21 @@ import {
   createBarang,
   updateBarang,
   deleteBarang,
-  getMyBarang, // Added
+  getMyBarang
 } from "../controllers/BarangController.js";
 import { verifyToken } from "../middleware/AuthMiddleware.js";
+import { uploadProductImage } from "../middleware/UploadMiddleware.js";
 
 const router = express.Router();
 
-router.get("/barang", getBarang); // Public, or verifyToken if all items require login to view
-router.get("/barang/me", verifyToken, getMyBarang); // Get items for logged-in user
-router.get("/barang/:item_id", getBarangById); // Public, or verifyToken
-router.post("/barang", verifyToken, createBarang);
-router.put("/barang/:item_id", verifyToken, updateBarang);
+// Public routes
+router.get("/barang", getBarang);
+router.get("/barang/:item_id", getBarangById);
+
+// Protected routes - image upload middleware handles both file and form data
+router.post("/barang", verifyToken, uploadProductImage, createBarang);
+router.put("/barang/:item_id", verifyToken, uploadProductImage, updateBarang);
 router.delete("/barang/:item_id", verifyToken, deleteBarang);
+router.get("/my-barang", verifyToken, getMyBarang);
 
 export default router;

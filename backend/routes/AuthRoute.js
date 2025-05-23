@@ -3,6 +3,7 @@ import { register, login, refreshToken, logout } from "../controllers/AuthContro
 
 const router = express.Router();
 
+// Routes without prefix (they'll get the /auth prefix from app.use("/auth", AuthRoute))
 router.post("/register", register);
 router.post("/login", login);
 router.post("/refresh-token", refreshToken); // Changed from /token to /refresh-token for clarity

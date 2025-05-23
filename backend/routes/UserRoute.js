@@ -1,16 +1,22 @@
 import express from "express";
-import { getMyProfile, updateMyProfile, getAllUsers, deleteUserById } from "../controllers/UserController.js";
+import { getUsers, createUser, updateUser, deleteUser, getMyProfile, updateMyProfile, getAllUsers, deleteUserById } from "../controllers/UserController.js";
 import { verifyToken } from "../middleware/AuthMiddleware.js";
+import { uploadProfileImage } from "../middleware/UploadMiddleware.js";
 
 const router = express.Router();
 
-// Profile routes for logged-in user
+// Public routes
+router.get("/users", getUsers);
+router.post("/users", createUser);
+router.put("/users/:user_id", updateUser);
+router.delete("/users/:user_id", deleteUser);
+
+// Protected routes
 router.get("/profile", verifyToken, getMyProfile);
-router.put("/profile", verifyToken, updateMyProfile);
+router.put("/profile", verifyToken, uploadProfileImage, updateMyProfile);
 
-// Admin routes (optional, protect with admin role middleware if implemented)
-router.get("/users", verifyToken, getAllUsers); // Example: Get all users for admin
-router.delete("/users/:user_id", verifyToken, deleteUserById); // Example: Delete user by ID for admin
-
+// Admin routes (if needed)
+router.get("/admin/users", verifyToken, getAllUsers);
+router.delete("/admin/users/:user_id", verifyToken, deleteUserById);
 
 export default router;

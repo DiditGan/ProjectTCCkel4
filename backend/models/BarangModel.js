@@ -47,8 +47,9 @@ const Product = db.define("barang", {
     allowNull: true,
   },
   image_url: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: true,
+    comment: 'Stores relative path to the image file'
   },
   date_posted: {
     type: DataTypes.DATE,

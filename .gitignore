@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/node
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
-
+# Backend folders but keep the root directories
+backend/public/images/profiles/*
+!backend/public/images/profiles/.gitkeep
+backend/public/images/products/*
+!backend/public/images/products/.gitkeep
 ### Node ###
 # Logs
 logs

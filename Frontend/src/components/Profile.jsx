@@ -1,23 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HiX, HiOutlineCamera, HiOutlineShieldCheck, HiOutlineLogout } from "react-icons/hi";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from "../contexts/AuthContext";
 
-// Dummy user data - in a real app, this would come from an API or context
-const DUMMY_USER = {
-  username: "rahel",
-  fullName: "Rahel Nadia",
-  email: "rahel.nadia@example.com",
-  phoneNumber: "+6281234567890",
-  location: "Jakarta Selatan",
-  profileImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-};
+// API URL
+const API_BASE_URL = "http://localhost:5000";
+
+// Default profile image if none is set
+const defaultProfileImage = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
 
 const Profile = ({ onClose }) => {
   const navigate = useNavigate();
+  const { currentUser, logout, updateUserData } = useAuth();
   const [activeTab, setActiveTab] = useState("profile"); // profile or password
-  const [user, setUser] = useState(DUMMY_USER);
+  const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedUser, setEditedUser] = useState(DUMMY_USER);
+  const [editedUser, setEditedUser] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // Password change state
   const [passwordData, setPasswordData] = useState({
@@ -28,6 +28,46 @@ const Profile = ({ onClose }) => {
   
   // Image upload preview state
   const [imagePreview, setImagePreview] = useState(null);
+  
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          throw new Error("Authentication token not found");
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/api/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch user profile");
+        }
+        
+        const userData = await response.json();
+        setUser(userData);
+        setEditedUser({
+          fullName: userData.name,
+          email: userData.email,
+          phoneNumber: userData.phone_number || "",
+          location: userData.address || "",
+          profileImage: userData.profile_picture
+        });
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
   
   // Handle profile edit 
   const handleInputChange = (e) => {
@@ -43,6 +83,25 @@ const Profile = ({ onClose }) => {
     const file = e.target.files[0];
     if (!file) return;
     
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File size must be less than 2MB');
+      return;
+    }
+    
+    // Store the actual file for upload
+    setEditedUser(prev => ({
+      ...prev,
+      profileImageFile: file
+    }));
+    
+    // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target.result);
@@ -60,47 +119,165 @@ const Profile = ({ onClose }) => {
   };
   
   // Save profile changes
-  const handleProfileSave = () => {
-    // In a real app, you would send this data to an API
-    setUser({
-      ...editedUser,
-      profileImage: imagePreview || editedUser.profileImage
-    });
-    setIsEditing(false);
-    alert("Profile updated successfully!");
+  const handleProfileSave = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      // Use FormData for file upload
+      const formData = new FormData();
+      formData.append('name', editedUser.fullName);
+      formData.append('email', editedUser.email);
+      formData.append('phone_number', editedUser.phoneNumber);
+      formData.append('address', editedUser.location);
+      
+      // Add profile image file if selected
+      if (editedUser.profileImageFile) {
+        formData.append('profileImage', editedUser.profileImageFile);
+        console.log("Uploading profile image:", editedUser.profileImageFile.name);
+      }
+      
+      console.log("Form data to be sent:");
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value instanceof File ? value.name : value}`);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/profile`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`
+          // Don't set Content-Type, let browser set it with boundary for FormData
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || "Failed to update profile");
+      }
+      
+      const result = await response.json();
+      console.log("Profile update response:", result);
+      
+      // Update user state with response data
+      setUser(result.user);
+      setEditedUser({
+        fullName: result.user.name,
+        email: result.user.email,
+        phoneNumber: result.user.phone_number || "",
+        location: result.user.address || "",
+        profileImage: result.user.profile_picture
+      });
+      
+      // Update the user data in AuthContext
+      if (updateUserData) {
+        updateUserData(result.user);
+      }
+      
+      setIsEditing(false);
+      setImagePreview(null);
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert(error.message);
+    }
   };
   
   // Save password changes
-  const handlePasswordSave = (e) => {
+  const handlePasswordSave = async (e) => {
     e.preventDefault();
     
-    // Simple validation
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("New passwords don't match!");
-      return;
+    try {
+      // Simple validation
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        alert("New passwords don't match!");
+        return;
+      }
+      
+      if (passwordData.newPassword.length < 8) {
+        alert("Password must be at least 8 characters!");
+        return;
+      }
+      
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/profile`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          current_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || "Failed to update password");
+      }
+      
+      // Reset password fields
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+      
+      alert("Password changed successfully!");
+    } catch (error) {
+      console.error("Error updating password:", error);
+      alert(error.message);
     }
-    
-    if (passwordData.newPassword.length < 8) {
-      alert("Password must be at least 8 characters!");
-      return;
-    }
-    
-    // In a real app, you would send this to an API
-    alert("Password changed successfully!");
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: ""
-    });
   };
+
   // Logout function
   const handleLogout = () => {
-    // In a real app, this would clear auth tokens, etc.
-    alert("Logging out...");
+    logout();
     onClose();
     navigate('/');
-    // Typically you'd redirect to login or home page
   };
+
+  // Helper function to get profile image URL
+  const getProfileImageUrl = (imagePath) => {
+    if (!imagePath) return defaultProfileImage;
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${API_BASE_URL}${imagePath}`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading profile data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full text-center">
+          <HiX className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-500 mb-4">Error: {error}</p>
+          <button
+            onClick={onClose}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50 p-4">
@@ -148,9 +325,12 @@ const Profile = ({ onClose }) => {
               <div className="relative">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-green-500">
                   <img 
-                    src={isEditing ? (imagePreview || user.profileImage) : user.profileImage} 
+                    src={imagePreview || getProfileImageUrl(user.profile_picture)} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = defaultProfileImage;
+                    }}
                   />
                 </div>
                 {isEditing && (
@@ -165,7 +345,7 @@ const Profile = ({ onClose }) => {
                   </label>
                 )}
               </div>
-              <h3 className="font-bold text-xl mt-2">{user.username}</h3>
+              <h3 className="font-bold text-xl mt-2">{user.name}</h3>
             </div>
             
             {/* User Info */}
@@ -181,7 +361,7 @@ const Profile = ({ onClose }) => {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                   />
                 ) : (
-                  <p className="mt-1 text-gray-800">{user.fullName}</p>
+                  <p className="mt-1 text-gray-800">{user.name}</p>
                 )}
               </div>
               
@@ -211,7 +391,7 @@ const Profile = ({ onClose }) => {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                   />
                 ) : (
-                  <p className="mt-1 text-gray-800">{user.phoneNumber}</p>
+                  <p className="mt-1 text-gray-800">{user.phone_number || "-"}</p>
                 )}
               </div>
               
@@ -226,7 +406,7 @@ const Profile = ({ onClose }) => {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                   />
                 ) : (
-                  <p className="mt-1 text-gray-800">{user.location}</p>
+                  <p className="mt-1 text-gray-800">{user.address || "-"}</p>
                 )}
               </div>
             </div>

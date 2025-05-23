@@ -72,7 +72,7 @@ export const getTransaksiById = async (req, res) => {
 export const createTransaksi = async (req, res) => {
   try {
     const buyer_id = req.userId;
-    const { item_id, quantity, payment_method, shipping_address, customerInfo } = req.body; // customerInfo from frontend
+    const { item_id, quantity, payment_method, shipping_address, customerInfo } = req.body;
 
     if (!item_id || !quantity) {
         return res.status(400).json({ msg: "Item ID dan quantity wajib diisi." });
@@ -82,22 +82,25 @@ export const createTransaksi = async (req, res) => {
     if (!barang) {
       return res.status(404).json({ msg: "Barang tidak ditemukan" });
     }
+    
     if (barang.status !== 'available') {
         return res.status(400).json({ msg: "Barang sudah tidak tersedia." });
     }
 
     const seller_id = barang.user_id;
     
+    // Prevent self-purchase
     if (buyer_id === seller_id) {
-      return res.status(400).json({ msg: "Anda tidak dapat membeli barang sendiri" });
+      return res.status(400).json({ 
+        msg: "Anda tidak dapat membeli barang sendiri",
+        code: "SELF_PURCHASE_NOT_ALLOWED"
+      });
     }
     
     const parsedQuantity = parseInt(quantity, 10);
-    const totalPrice = barang.price * parsedQuantity; // Assuming barang.price is numeric
+    const totalPrice = barang.price * parsedQuantity;
 
-    // Use customerInfo from request body if available, otherwise default to buyer's profile (if needed)
     const finalShippingAddress = shipping_address || customerInfo?.address;
-
 
     const transaksiData = {
       item_id,
@@ -105,17 +108,13 @@ export const createTransaksi = async (req, res) => {
       seller_id,
       quantity: parsedQuantity,
       total_price: totalPrice,
-      status: "pending", // Default status
+      status: "pending",
       payment_method: payment_method || customerInfo?.paymentMethod?.name,
       shipping_address: finalShippingAddress,
       transaction_date: new Date()
     };
     
     const newTransaksi = await Transaksi.create(transaksiData);
-    
-    // Optionally, update item status to 'sold' or decrease stock if applicable
-    // For simplicity, we'll assume one item, so mark as sold.
-    // If multiple quantities, this logic would be more complex.
     await barang.update({ status: 'sold' });
 
     res.status(201).json({ msg: "Transaksi berhasil dibuat", data: newTransaksi });

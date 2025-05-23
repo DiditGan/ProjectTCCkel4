@@ -1,6 +1,12 @@
 import Barang from "../models/BarangModel.js";
 import User from "../models/UserModel.js";
 import { Op } from "sequelize";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const getBarang = async (req, res) => {
   try {
@@ -16,7 +22,6 @@ export const getBarang = async (req, res) => {
     if (status) {
       whereClause.status = status;
     } else {
-      // Default to showing only available items if no status is specified for general browsing
       whereClause.status = 'available';
     }
 
@@ -31,12 +36,12 @@ export const getBarang = async (req, res) => {
     const sortField = validSortBy.includes(sortBy) ? sortBy : 'date_posted';
     const sortOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-
     const barang = await Barang.findAll({
       where: whereClause,
       include: [{ model: User, attributes: ['user_id', 'name', 'profile_picture'] }],
       order: [[sortField, sortOrder]]
     });
+
     res.json(barang);
   } catch (error) {
     console.error("Get barang error:", error);
@@ -54,7 +59,14 @@ export const getBarangById = async (req, res) => {
     // Increment views (optional, can be done more robustly)
     await barang.increment('views');
     
-    res.json(barang);
+    // Add ownership flag for frontend
+    const responseData = {
+      ...barang.toJSON(),
+      isOwner: req.userId ? barang.user_id === req.userId : false,
+      canPurchase: req.userId ? barang.user_id !== req.userId && barang.status === 'available' : false
+    };
+    
+    res.json(responseData);
   } catch (error) {
     res.status(500).json({ msg: error.message });
   }
@@ -67,10 +79,20 @@ export const createBarang = async (req, res) => {
       return res.status(401).json({ msg: "Unauthorized: User ID not found" });
     }
 
-    const { item_name, description, category, price, condition, location, image_url, status = "available" } = req.body;
+    console.log("Creating barang with data:", req.body);
+    console.log("File info:", req.file);
 
-    if (!item_name || !category || !price || !condition) {
-        return res.status(400).json({ msg: "Nama barang, kategori, harga, dan kondisi wajib diisi." });
+    const { item_name, description, category, price, condition, location, status = "available" } = req.body;
+
+    if (!item_name) {
+      return res.status(400).json({ msg: "Nama barang wajib diisi." });
+    }
+
+    // Get file path for the image if uploaded
+    let image_url = null;
+    if (req.file) {
+      image_url = `/uploads/products/${req.file.filename}`;
+      console.log("Image path set to:", image_url);
     }
 
     const barangData = {
@@ -78,10 +100,10 @@ export const createBarang = async (req, res) => {
       item_name,
       description,
       category,
-      price: parseFloat(price),
+      price: price ? parseFloat(price) : null,
       condition,
       location,
-      image_url, // Handle multiple images if frontend supports it
+      image_url,
       status,
       date_posted: new Date()
     };
@@ -106,16 +128,63 @@ export const updateBarang = async (req, res) => {
       return res.status(403).json({ msg: "Anda tidak memiliki akses untuk update barang ini" });
     }
     
-    const { item_name, description, category, price, condition, location, image_url, status } = req.body;
-    const updateData = { item_name, description, category, condition, location, image_url, status };
-    if (price) {
-        updateData.price = parseFloat(price);
+    console.log("📝 Updating barang with data:", req.body);
+    console.log("📁 New file uploaded:", req.file ? 'Yes' : 'No');
+    
+    const { item_name, description, category, price, condition, location, status } = req.body;
+    
+    // Build update data object
+    const updateData = {};
+    
+    if (item_name !== undefined) updateData.item_name = item_name;
+    if (description !== undefined) updateData.description = description;
+    if (category !== undefined) updateData.category = category;
+    if (condition !== undefined) updateData.condition = condition;
+    if (location !== undefined) updateData.location = location;
+    if (status !== undefined) updateData.status = status;
+    if (price !== undefined) updateData.price = price ? parseFloat(price) : null;
+
+    // Handle image update
+    if (req.file) {
+      // Delete old image file if it exists
+      if (barang.image_url) {
+        const oldImagePath = path.join(__dirname, '../public', barang.image_url);
+        try {
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+            console.log("🗑️ Deleted old image:", oldImagePath);
+          }
+        } catch (deleteError) {
+          console.error("Failed to delete old image:", deleteError);
+        }
+      }
+      
+      // Set new image URL
+      updateData.image_url = `/images/products/${req.file.filename}`;
+      console.log("🖼️ Updated image URL to:", updateData.image_url);
     }
 
     await barang.update(updateData);
-    res.json({ msg: "Barang berhasil diupdate", data: barang });
+    
+    // Fetch updated barang with user info
+    const updatedBarang = await Barang.findByPk(req.params.item_id, {
+      include: [{ model: User, attributes: ['user_id', 'name', 'profile_picture'] }]
+    });
+    
+    res.json({ msg: "Barang berhasil diupdate", data: updatedBarang });
   } catch (error) {
-    console.error("Update barang error:", error);
+    console.error("❌ Update barang error:", error);
+    
+    // Clean up uploaded file if database update fails
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log("🗑️ Cleaned up uploaded file due to error");
+      } catch (unlinkError) {
+        console.error("Failed to clean up file:", unlinkError);
+      }
+    }
+    
     res.status(400).json({ msg: error.message });
   }
 };
@@ -129,9 +198,23 @@ export const deleteBarang = async (req, res) => {
       return res.status(403).json({ msg: "Anda tidak memiliki akses untuk menghapus barang ini" });
     }
 
+    // Delete associated image file
+    if (barang.image_url) {
+      const imagePath = path.join(__dirname, '../public', barang.image_url);
+      try {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log("🗑️ Deleted image file:", imagePath);
+        }
+      } catch (deleteError) {
+        console.error("Failed to delete image file:", deleteError);
+      }
+    }
+
     await barang.destroy();
     res.json({ msg: "Barang berhasil dihapus" });
   } catch (error) {
+    console.error("❌ Delete barang error:", error);
     res.status(400).json({ msg: error.message });
   }
 };

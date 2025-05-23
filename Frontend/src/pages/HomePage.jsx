@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiSearch, HiFilter } from "react-icons/hi";
+
+// API URL
+const API_BASE_URL = "http://localhost:5000";
 
 const PRODUCT_CATEGORIES = [
   "All Items",
@@ -14,59 +17,73 @@ const PRODUCT_CATEGORIES = [
   "Sports"
 ];
 
-const DUMMY_PRODUCTS = [
-  {
-    id: 1,
-    name: "Vintage Wooden Chair",
-    category: "Furniture",
-    price: "Rp 250.000",
-    condition: "Good",
-    imageUrl: "https://images.unsplash.com/photo-1503602642458-232111445657?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80"
-  },
-  {
-    id: 2,
-    name: "LED Desk Lamp",
-    category: "Electronics",
-    price: "Rp 120.000",
-    condition: "Like New",
-    imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80"
-  },
-  {
-    id: 3,
-    name: "Casual Denim Jacket",
-    category: "Clothing",
-    price: "Rp 175.000",
-    condition: "Good",
-    imageUrl: "https://images.unsplash.com/photo-1551028719-00167b16eac5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80"
-  },
-  {
-    id: 4,
-    name: "Novel Collection (Set of 5)",
-    category: "Books",
-    price: "Rp 200.000",
-    condition: "Good",
-    imageUrl: "https://images.unsplash.com/photo-1512820790803-83ca734da794?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=934&q=80"
-  }
-];
-
 const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Items");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [selectedCategory]);
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Build query params
+      const params = new URLSearchParams();
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      if (selectedCategory && selectedCategory !== "All Items") {
+        params.append('category', selectedCategory);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/barang?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
+      
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle search form submission
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
-    // Here you would typically fetch data or filter results
+    fetchProducts();
   };
 
-  // Filter products based on search query and selected category
-  const filteredProducts = DUMMY_PRODUCTS.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All Items" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Format price to Rupiah
+  const formatPrice = (price) => {
+    return `Rp ${parseInt(price).toLocaleString('id-ID')}`;
+  };
+
+  // Helper function to get full image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) {
+      return "https://via.placeholder.com/400x300?text=No+Image";
+    }
+    
+    // If it's already a full URL, return as is
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    return `${API_BASE_URL}${imagePath}`;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -146,55 +163,76 @@ const HomePage = () => {
             {selectedCategory === "All Items" ? "Available Items" : selectedCategory}
           </h2>
           <div className="text-sm text-gray-500">
-            Showing {filteredProducts.length} items
+            Showing {products.length} items
           </div>
         </div>
         
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map(product => (
-              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-48 overflow-hidden">
-                  <img 
-                    src={product.imageUrl} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4">
-                  <span className="text-xs font-medium bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                    {product.category}
-                  </span>
-                  <h3 className="text-lg font-medium text-gray-800 mt-2">{product.name}</h3>
-                  <p className="text-green-700 font-bold mt-1">{product.price}</p>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm text-gray-500">Condition: {product.condition}</span>
-                    <Link 
-                      to={`/details/${product.id}`} 
-                      className="text-green-600 hover:text-green-800 text-sm font-medium"
-                    >
-                      View Details
-                    </Link>
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading products...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-500">Error: {error}</p>
+            <button 
+              onClick={fetchProducts} 
+              className="mt-4 bg-green-600 text-white px-4 py-2 rounded-md"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : (
+          /* Product Grid */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {products.length > 0 ? (
+              products.map(product => (
+                <div key={product.item_id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-48 overflow-hidden">
+                    <img 
+                      src={getImageUrl(product.image_url)} 
+                      alt={product.item_name} 
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.src = "https://via.placeholder.com/400x300?text=No+Image";
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="text-xs font-medium bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      {product.category}
+                    </span>
+                    <h3 className="text-lg font-medium text-gray-800 mt-2">{product.item_name}</h3>
+                    <p className="text-green-700 font-bold mt-1">{formatPrice(product.price)}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm text-gray-500">Condition: {product.condition}</span>
+                      <Link 
+                        to={`/details/${product.item_id}`} 
+                        className="text-green-600 hover:text-green-800 text-sm font-medium"
+                      >
+                        View Details
+                      </Link>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-lg text-gray-600">No items found matching your search.</p>
+                <button 
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("All Items");
+                    fetchProducts();
+                  }}
+                  className="mt-4 text-green-600 hover:text-green-800 font-medium"
+                >
+                  Clear filters
+                </button>
               </div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-12">
-              <p className="text-lg text-gray-600">No items found matching your search.</p>
-              <button 
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("All Items");
-                }}
-                className="mt-4 text-green-600 hover:text-green-800 font-medium"
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

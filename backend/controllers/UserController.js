@@ -57,13 +57,33 @@ export const getMyProfile = async (req, res) => {
 };
 
 export const updateMyProfile = async (req, res) => {
-  const { email, name, phone_number, profile_picture, current_password, new_password } = req.body;
   try {
+    const { email, name, phone_number, address, current_password, new_password } = req.body;
+    
+    console.log("📝 Updating profile with data:", {
+      email, name, phone_number, address,
+      has_current_password: !!current_password,
+      has_new_password: !!new_password,
+      file: req.file ? req.file.filename : 'No file uploaded'
+    });
+    
     const user = await User.findByPk(req.userId);
     if (!user) return res.status(404).json({ msg: "User tidak ditemukan" });
 
-    const updateData = { email, name, phone_number, profile_picture };
+    // Build update data with only provided fields
+    const updateData = {};
+    if (email) updateData.email = email;
+    if (name) updateData.name = name;
+    if (phone_number !== undefined) updateData.phone_number = phone_number;
+    if (address !== undefined) updateData.address = address;
 
+    // Handle profile picture upload
+    if (req.file) {
+      updateData.profile_picture = `/uploads/profiles/${req.file.filename}`;
+      console.log("📸 Profile picture updated to:", updateData.profile_picture);
+    }
+
+    // Handle password update
     if (new_password) {
       if (!current_password) {
         return res.status(400).json({ msg: "Password saat ini diperlukan untuk mengubah password." });
@@ -75,10 +95,23 @@ export const updateMyProfile = async (req, res) => {
       updateData.password = await bcrypt.hash(new_password, 10);
     }
 
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ msg: "Tidak ada data yang diubah" });
+    }
 
     await User.update(updateData, { where: { user_id: req.userId } });
-    res.json({ msg: "Profil berhasil diupdate" });
+    
+    // Return updated user data (excluding password)
+    const updatedUser = await User.findByPk(req.userId, {
+      attributes: { exclude: ["password"] }
+    });
+    
+    res.json({ 
+      msg: "Profil berhasil diupdate",
+      user: updatedUser
+    });
   } catch (error) {
+    console.error("❌ Update profile error:", error);
     res.status(400).json({ msg: error.message });
   }
 };
