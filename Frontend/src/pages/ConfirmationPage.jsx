@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { HiCheck, HiClock, HiShoppingBag, HiHome } from "react-icons/hi";
+import { HiCheckCircle, HiHome, HiShoppingBag, HiExclamationCircle } from "react-icons/hi";
 
 const ConfirmationPage = () => {
   const navigate = useNavigate();
@@ -9,28 +9,19 @@ const ConfirmationPage = () => {
   const [transaction, setTransaction] = useState(null);
 
   useEffect(() => {
-    // Get transaction data from navigation state
+    // Get transaction from location state
     const transactionData = location.state?.transaction;
     
     if (!transactionData) {
-      // If no transaction data, redirect to home
-      navigate('/home');
+      // Redirect if no transaction data
+      console.error("No transaction data found in navigation state");
+      // Wait a moment before navigating away to allow for debugging
+      setTimeout(() => navigate('/'), 500);
       return;
     }
-
+    
+    console.log("Received transaction data:", transactionData);
     setTransaction(transactionData);
-
-    // Simulate API call to confirm transaction
-    const confirmTransaction = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // Update transaction status if needed
-      } catch (error) {
-        console.error("Error confirming transaction:", error);
-      }
-    };
-
-    confirmTransaction();
   }, [location.state, navigate]);
 
   if (!transaction) {
@@ -39,33 +30,11 @@ const ConfirmationPage = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Memuat konfirmasi...</p>
+          <p className="mt-4 text-gray-600">Memuat data...</p>
         </div>
       </div>
     );
   }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending':
-        return <HiClock className="text-yellow-500" />;
-      case 'confirmed':
-        return <HiCheck className="text-green-500" />;
-      default:
-        return <HiCheck className="text-green-500" />;
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'Menunggu Konfirmasi';
-      case 'confirmed':
-        return 'Pesanan Dikonfirmasi';
-      default:
-        return 'Pesanan Berhasil';
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -73,108 +42,78 @@ const ConfirmationPage = () => {
       
       <div className="h-16"></div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Success Header */}
-          <div className="bg-white rounded-lg shadow-md p-8 text-center mb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <HiCheck className="text-3xl text-green-600" />
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <HiCheckCircle className="text-6xl text-green-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Pesanan Berhasil Dibuat!</h1>
+          <p className="text-gray-600 mb-6">Terima kasih telah membeli di GiveTzy</p>
+          
+          <div className="mb-8 p-4 bg-gray-50 rounded-lg border text-left">
+            <div className="mb-4">
+              <span className="text-sm text-gray-500">ID Transaksi:</span>
+              <p className="font-medium text-gray-800">{transaction.id}</p>
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Pesanan Berhasil Dibuat!</h1>
-            <p className="text-gray-600">
-              Terima kasih! Pesanan Anda telah berhasil dibuat dengan ID: <strong>{transaction.id}</strong>
-            </p>
-          </div>
-
-          {/* Transaction Details */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Detail Pesanan</h2>
             
-            {/* Product Info */}
-            <div className="flex items-center pb-4 border-b mb-4">
+            <div className="flex items-center mb-4 pb-4 border-b">
               <img
-                src={transaction.product.imageUrl}
+                src={transaction.product.imageUrl || "https://via.placeholder.com/150?text=No+Image"}
                 alt={transaction.product.name}
-                className="w-20 h-20 object-cover rounded-md mr-4"
+                className="w-16 h-16 object-cover rounded-md mr-4"
+                onError={(e) => {
+                  e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                }}
               />
-              <div className="flex-1">
+              <div>
                 <h3 className="font-medium text-gray-800">{transaction.product.name}</h3>
-                <p className="text-sm text-gray-600">Penjual: {transaction.product.seller}</p>
-                <p className="text-green-600 font-semibold">{transaction.product.price}</p>
                 <p className="text-sm text-gray-600">Jumlah: {transaction.quantity}</p>
+                <p className="text-green-600 font-semibold">
+                  Rp {(transaction.product.priceNumeric * transaction.quantity).toLocaleString('id-ID')}
+                </p>
               </div>
             </div>
-
-            {/* Customer Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            
+            <div className="mb-4 grid grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium text-gray-800 mb-2">Informasi Pembeli</h4>
-                <p className="text-sm text-gray-600">{transaction.customerInfo.name}</p>
-                <p className="text-sm text-gray-600">{transaction.customerInfo.email}</p>
-                <p className="text-sm text-gray-600">{transaction.customerInfo.phone}</p>
+                <span className="text-sm text-gray-500">Status Pesanan:</span>
+                <p className="font-medium text-yellow-600 capitalize">{transaction.status}</p>
               </div>
               <div>
-                <h4 className="font-medium text-gray-800 mb-2">Alamat Pengiriman</h4>
-                <p className="text-sm text-gray-600">{transaction.customerInfo.address}</p>
+                <span className="text-sm text-gray-500">Metode Pembayaran:</span>
+                <p className="font-medium text-gray-800">{transaction.paymentMethod.name}</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">Alamat Pengiriman:</span>
+                <p className="font-medium text-gray-800">{transaction.customerInfo.address}</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">Total Pembayaran:</span>
+                <p className="font-medium text-green-600">Rp {transaction.total.toLocaleString('id-ID')}</p>
               </div>
             </div>
-
-            {/* Payment Info */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-800 mb-2">Informasi Pembayaran</h4>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Metode Pembayaran:</span>
-                <span className="text-sm font-medium">{transaction.paymentMethod.name}</span>
-              </div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Status:</span>
-                <div className="flex items-center">
-                  {getStatusIcon(transaction.status)}
-                  <span className="text-sm font-medium ml-2">{getStatusText(transaction.status)}</span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center border-t pt-2">
-                <span className="font-medium">Total Pembayaran:</span>
-                <span className="text-lg font-bold text-green-600">
-                  Rp {transaction.total.toLocaleString('id-ID')}
-                </span>
-              </div>
+            
+            <div className="p-4 bg-yellow-50 rounded border border-yellow-200 flex items-start">
+              <HiExclamationCircle className="text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-yellow-700">
+                Silakan lakukan pembayaran sesuai metode yang dipilih. Pesanan akan diproses setelah pembayaran berhasil dikonfirmasi.
+              </p>
             </div>
           </div>
-
-          {/* Next Steps */}
-          <div className="bg-blue-50 rounded-lg p-6 mb-6">
-            <h3 className="font-semibold text-blue-800 mb-3">Langkah Selanjutnya:</h3>
-            <ul className="text-sm text-blue-700 space-y-2">
-              <li>• Seller akan menghubungi Anda dalam 1x24 jam</li>
-              <li>• Lakukan pembayaran sesuai metode yang dipilih</li>
-              <li>• Tunggu konfirmasi dari seller untuk pengiriman</li>
-              <li>• Anda dapat memantau status pesanan di halaman profil</li>
-            </ul>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link 
-              to="/profile"
-              className="bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium text-center transition flex items-center justify-center"
-            >
-              <HiShoppingBag className="mr-2" />
-              Lihat Pesanan
-            </Link>
-            <Link 
-              to="/home"
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-medium text-center transition flex items-center justify-center"
+          
+          <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <Link
+              to="/"
+              className="px-4 py-2 border border-gray-300 text-gray-600 rounded-md flex items-center justify-center hover:bg-gray-50 transition"
             >
               <HiHome className="mr-2" />
-              Belanja Lagi
+              Kembali ke Beranda
             </Link>
-            <button 
-              onClick={() => navigate('/messages')}
-              className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition flex items-center justify-center"
+            <Link
+              to="/profile"
+              className="px-4 py-2 bg-green-600 text-white rounded-md flex items-center justify-center hover:bg-green-700 transition"
             >
-              💬 Chat Seller
-            </button>
+              <HiShoppingBag className="mr-2" />
+              Lihat Riwayat Pembelian
+            </Link>
           </div>
         </div>
       </div>
