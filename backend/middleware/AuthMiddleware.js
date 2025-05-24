@@ -23,7 +23,7 @@ export const verifyToken = async (req, res, next) => { // Make function async
 
   try {
     // Get token secret from environment variable or use default (for development)
-    const secretKey = process.env.ACCESS_TOKEN_SECRET || "access_secret_dev_key";
+    const secretKey = process.env._ACCESS_TOKEN_SECRET || "access_secret_dev_key";
     
     // Verify token
     const decoded = jwt.verify(token, secretKey);

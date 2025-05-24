@@ -22,18 +22,18 @@ Create a `.env` file in the backend directory with the following variables:
 
 ```
 # Database Configuration
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASS=your_database_password
-DB_HOST=your_database_host
+_DB_NAME=your_database_name
+_DB_USER=your_database_user
+_DB_PASS=your_database_password
+_DB_HOST=your_database_host
 
 # Authentication
-ACCESS_TOKEN_SECRET=your_access_token_secret
-REFRESH_TOKEN_SECRET=your_refresh_token_secret
+_ACCESS_TOKEN_SECRET=your__ACCESS_TOKEN_SECRET
+_REFRESH_TOKEN_SECRET=your__REFRESH_TOKEN_SECRET
 
 # Server Configuration
-PORT=5000
-CORS_ORIGIN=http://localhost:3000
+_PORT=5000
+_CORS_ORIGIN=http://localhost:3000
 ```
 
 ## Getting Started

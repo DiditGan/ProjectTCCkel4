@@ -6,10 +6,10 @@ import jwt from "jsonwebtoken";
 let refreshTokens = [];
 
 // Ensure token secrets are set, with fallbacks for development
-const ACCESS_TOKEN_SECRET =
-  process.env.ACCESS_TOKEN_SECRET || "access_secret_dev_key";
-const REFRESH_TOKEN_SECRET =
-  process.env.REFRESH_TOKEN_SECRET || "refresh_secret_dev_key";
+const _ACCESS_TOKEN_SECRET =
+  process.env._ACCESS_TOKEN_SECRET || "access_secret_dev_key";
+const _REFRESH_TOKEN_SECRET =
+  process.env._REFRESH_TOKEN_SECRET || "refresh_secret_dev_key";
 
 export const register = async (req, res) => {
   const { email, password, name, phone_number, profile_picture } = req.body;
@@ -51,13 +51,13 @@ export const login = async (req, res) => {
     // Generate access token (short-lived)
     const accessToken = jwt.sign(
       { user_id: user.user_id, email: user.email },
-      ACCESS_TOKEN_SECRET
+      _ACCESS_TOKEN_SECRET
     );
 
     // Generate refresh token (long-lived)
     const refreshToken = jwt.sign(
       { user_id: user.user_id, email: user.email },
-      REFRESH_TOKEN_SECRET,
+      _REFRESH_TOKEN_SECRET,
       { expiresIn: "7d" }
     );
 
@@ -97,7 +97,7 @@ export const refreshToken = (req, res) => {
   }
 
   // Verify the refresh token
-  jwt.verify(refreshToken, REFRESH_TOKEN_SECRET, (err, decoded) => {
+  jwt.verify(refreshToken, _REFRESH_TOKEN_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).json({ msg: "Verifikasi refresh token gagal" });
     }
@@ -105,7 +105,7 @@ export const refreshToken = (req, res) => {
     // Create new access token
     const accessToken = jwt.sign(
       { user_id: decoded.user_id, email: decoded.email },
-      ACCESS_TOKEN_SECRET,
+      _ACCESS_TOKEN_SECRET,
       { expiresIn: "15m" }
     );
 

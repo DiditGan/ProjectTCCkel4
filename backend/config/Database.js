@@ -3,11 +3,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const db = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASS,
+  process.env._DB_NAME,
+  process.env._DB_USER,
+  process.env._DB_PASS,
   {
-    host: process.env.DB_HOST,
+    host: process.env._DB_HOST,
     dialect: "mysql",
   }
 );

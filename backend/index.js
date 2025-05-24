@@ -14,14 +14,14 @@ import fs from 'fs';
 dotenv.config();
 
 // Check required environment variables
-if (!process.env.ACCESS_TOKEN_SECRET) {
-  console.warn("WARNING: ACCESS_TOKEN_SECRET not set! Using default (insecure) value.");
-  process.env.ACCESS_TOKEN_SECRET = "default_access_token_secret_key";
+if (!process.env._ACCESS_TOKEN_SECRET) {
+  console.warn("WARNING: _ACCESS_TOKEN_SECRET not set! Using default (insecure) value.");
+  process.env._ACCESS_TOKEN_SECRET = "default__ACCESS_TOKEN_SECRET_key";
 }
 
-if (!process.env.REFRESH_TOKEN_SECRET) {
-  console.warn("WARNING: REFRESH_TOKEN_SECRET not set! Using default (insecure) value.");
-  process.env.REFRESH_TOKEN_SECRET = "default_refresh_token_secret_key";
+if (!process.env._REFRESH_TOKEN_SECRET) {
+  console.warn("WARNING: _REFRESH_TOKEN_SECRET not set! Using default (insecure) value.");
+  process.env._REFRESH_TOKEN_SECRET = "default__REFRESH_TOKEN_SECRET_key";
 }
 
 // Get current directory
@@ -32,7 +32,7 @@ const app = express();
 
 // Middleware - Order is important!
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: process.env._CORS_ORIGIN || "http://localhost:3000",
     credentials: true
 }));
 
@@ -104,8 +104,8 @@ const startServer = async () => {
     await db.sync({ alter: true }); 
     console.log("Database synchronized.");
     
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    const _PORT = process.env._PORT || 5000;
+    app.listen(_PORT, () => console.log(`Server running on port ${_PORT}`));
   } catch (error) {
     console.error("Failed to start server:", error.message);
     process.exit(1);
