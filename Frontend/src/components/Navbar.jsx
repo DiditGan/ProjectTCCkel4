@@ -89,14 +89,6 @@ const Navbar = () => {
                   <HiOutlineShoppingBag className="w-5 h-5 mr-1" />
                   Produk Saya
                 </Link>
-                
-                <Link
-                  to="/messages"
-                  className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-300 flex items-center"
-                >
-                  <HiOutlineChatAlt2 className="w-5 h-5 mr-1" />
-                  Pesan
-                </Link>
               </>
             )}
             

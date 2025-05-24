@@ -4,7 +4,6 @@ import UserRoute from "./routes/UserRoute.js";
 import AuthRoute from "./routes/AuthRoute.js";
 import BarangRoute from "./routes/BarangRoute.js";
 import TransaksiRoute from "./routes/TransaksiRoute.js";
-import ChatRoute from "./routes/ChatRoute.js"; // Added
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
@@ -62,12 +61,10 @@ const profilesDir = path.join(imagesDir, 'profiles');
 });
 
 // Routes
-app.use("/auth", AuthRoute); // Change from app.use(AuthRoute) to app.use("/auth", AuthRoute)
-app.use("/api", UserRoute);   // Prefix user routes
-app.use("/api", BarangRoute); // Prefix barang routes
-app.use("/api", TransaksiRoute); // Prefix transaksi routes
-app.use("/api", ChatRoute);   // Prefix chat routes
-
+app.use("/auth", AuthRoute);
+app.use("/api", UserRoute);
+app.use("/api", BarangRoute);
+app.use("/api", TransaksiRoute);
 
 // Test route to check if server is running
 app.get("/api-status", (req, res) => {
@@ -104,9 +101,6 @@ const startServer = async () => {
     await db.authenticate();
     console.log("Database connection established.");
     
-    // Use { alter: true } carefully in production, it can cause data loss.
-    // For development, it helps sync schema changes.
-    // For production, use migrations.
     await db.sync({ alter: true }); 
     console.log("Database synchronized.");
     

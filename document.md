@@ -9,8 +9,6 @@
    - Mengelompokkan barang per kategori dan fitur pencarian.
 4. **Transaksi & Pembayaran**  
    - Proses checkout, konfirmasi pembayaran, dan pelacakan pesanan.
-5. **Chat atau Pesan Internal**  
-   - Memudahkan komunikasi antara penjual dan pembeli.
 
 ## Database (Tabel Utama)
 1. **users**  
@@ -42,7 +40,7 @@
 2. **Halaman Beranda (Daftar Produk)**  
    - Menampilkan barang bekas terbaru atau populer.
 3. **Halaman Detail Produk**  
-   - Informasi lengkap barang, foto, deskripsi, dan tombol “Beli Sekarang”.
+   - Informasi lengkap barang, foto, deskripsi, dan tombol "Beli Sekarang".
 4. **Halaman Pembayaran & Konfirmasi**  
    - Detail pesanan, metode pembayaran, dan konfirmasi transaksi.
 5. **Halaman Profil Pengguna**  

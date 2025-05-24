@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiSearch, HiFilter } from "react-icons/hi";
+import { useAuth } from "../contexts/AuthContext";
 
 // API URL
 const API_BASE_URL = "http://localhost:5000";
@@ -24,6 +25,9 @@ const HomePage = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     fetchProducts();
@@ -50,6 +54,7 @@ const HomePage = () => {
       }
       
       const data = await response.json();
+      console.log("Fetched products:", data);
       setProducts(data);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -67,6 +72,7 @@ const HomePage = () => {
 
   // Format price to Rupiah
   const formatPrice = (price) => {
+    if (price === null || price === undefined) return "Rp 0";
     return `Rp ${parseInt(price).toLocaleString('id-ID')}`;
   };
 
@@ -139,7 +145,10 @@ const HomePage = () => {
                     <button
                       key={category}
                       type="button"
-                      onClick={() => setSelectedCategory(category)}
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setIsFilterOpen(false);
+                      }}
                       className={`px-3 py-2 text-sm rounded-md transition ${
                         selectedCategory === category
                           ? 'bg-green-100 text-green-800 font-medium'
@@ -177,7 +186,7 @@ const HomePage = () => {
             <p className="text-red-500">Error: {error}</p>
             <button 
               onClick={fetchProducts} 
-              className="mt-4 bg-green-600 text-white px-4 py-2 rounded-md"
+              className="mt-4 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
             >
               Try Again
             </button>
@@ -187,7 +196,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.length > 0 ? (
               products.map(product => (
-                <div key={product.item_id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <div key={product.item_id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                   <div className="h-48 overflow-hidden">
                     <img 
                       src={getImageUrl(product.image_url)} 
@@ -198,14 +207,21 @@ const HomePage = () => {
                       }}
                     />
                   </div>
-                  <div className="p-4">
-                    <span className="text-xs font-medium bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      {product.category}
+                  <div className="p-4 flex flex-col flex-grow">
+                    <span className="text-xs font-medium bg-green-100 text-green-800 px-2 py-1 rounded-full self-start">
+                      {product.category || 'Uncategorized'}
                     </span>
-                    <h3 className="text-lg font-medium text-gray-800 mt-2">{product.item_name}</h3>
+                    <h3 className="text-lg font-medium text-gray-800 mt-2 flex-grow">{product.item_name}</h3>
                     <p className="text-green-700 font-bold mt-1">{formatPrice(product.price)}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-sm text-gray-500">Condition: {product.condition}</span>
+                    <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+                      <span>Condition: {product.condition}</span>
+                    </div>
+                    {product.user && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Seller: {product.user.name || 'Unknown'}
+                      </div>
+                    )}
+                    <div className="mt-3 pt-3 border-t border-gray-200 flex justify-center">
                       <Link 
                         to={`/details/${product.item_id}`} 
                         className="text-green-600 hover:text-green-800 text-sm font-medium"

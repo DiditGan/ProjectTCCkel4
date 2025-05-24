@@ -107,8 +107,16 @@ export function AuthProvider({ children }) {
   
   // Update user data function
   const updateUserData = (newUserData) => {
-    setCurrentUser(newUserData);
-    localStorage.setItem('user', JSON.stringify(newUserData));
+    // Ensure newUserData is not null or undefined before updating
+    if (newUserData) {
+      // newUserData is the complete updated user object from the backend
+      setCurrentUser(newUserData); 
+      localStorage.setItem('user', JSON.stringify(newUserData));
+    } else {
+      // If newUserData is null (e.g. after logout or error), clear user data
+      setCurrentUser(null);
+      localStorage.removeItem('user');
+    }
   };
   
   const value = {

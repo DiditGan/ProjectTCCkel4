@@ -8,7 +8,6 @@ import ManageProductsPage from "./pages/ManageProductsPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ConfirmationPage from "./pages/ConfirmationPage";
 import ProfilePage from "./pages/ProfilePage";
-import MessagesPage from "./pages/MessagesPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
@@ -29,7 +28,6 @@ const App = () => {
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/confirmation" element={<ConfirmationPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/messages" element={<MessagesPage />} />
           </Route>
           
           {/* Catch-all route for 404 errors */}

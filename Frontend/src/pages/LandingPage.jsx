@@ -1,7 +1,6 @@
 import grafisImage from '../assets/grafis.png';
 import yedhitImage from '../assets/Yedhit.jpg';
 import Navbar from '../components/Navbar';
-import LoginPage from './LoginPage';
 import { Link } from 'react-router-dom';
 
 function LandingPage() {
@@ -84,11 +83,6 @@ function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Login Section */}
-      <section id="login-section" className="bg-gray-100">
-        <LoginPage />
       </section>
 
       {/* Footer */}

@@ -32,7 +32,7 @@ export const getBarang = async (req, res) => {
         whereClause.price = { ...whereClause.price, [Op.lte]: parseFloat(maxPrice) };
     }
     
-    const validSortBy = ['date_posted', 'price', 'item_name', 'views', 'interested_count'];
+    const validSortBy = ['date_posted', 'price', 'item_name']; // Removed 'views', 'interested_count'
     const sortField = validSortBy.includes(sortBy) ? sortBy : 'date_posted';
     const sortOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
@@ -57,7 +57,7 @@ export const getBarangById = async (req, res) => {
     if (!barang) return res.status(404).json({ msg: "Barang tidak ditemukan" });
     
     // Increment views (optional, can be done more robustly)
-    await barang.increment('views');
+    // await barang.increment('views'); // Removed view increment
     
     // Add ownership flag for frontend
     const responseData = {
@@ -91,6 +91,7 @@ export const createBarang = async (req, res) => {
     // Get file path for the image if uploaded
     let image_url = null;
     if (req.file) {
+      // Path relative to the 'uploads' static directory
       image_url = `/uploads/products/${req.file.filename}`;
       console.log("Image path set to:", image_url);
     }
@@ -129,7 +130,7 @@ export const updateBarang = async (req, res) => {
     }
     
     console.log("📝 Updating barang with data:", req.body);
-    console.log("📁 New file uploaded:", req.file ? 'Yes' : 'No');
+    console.log("📁 New file uploaded:", req.file ? req.file.filename : 'No');
     
     const { item_name, description, category, price, condition, location, status } = req.body;
     
@@ -146,21 +147,24 @@ export const updateBarang = async (req, res) => {
 
     // Handle image update
     if (req.file) {
-      // Delete old image file if it exists
-      if (barang.image_url) {
-        const oldImagePath = path.join(__dirname, '../public', barang.image_url);
+      // Delete old image file if it exists and is different
+      if (barang.image_url && barang.image_url !== `/uploads/products/${req.file.filename}`) {
+        // Construct absolute path to the old image file
+        // barang.image_url is like /uploads/products/old_image.jpg
+        // __dirname is backend/controllers
+        const oldImageAbsolutePath = path.join(__dirname, '..', barang.image_url);
         try {
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-            console.log("🗑️ Deleted old image:", oldImagePath);
+          if (fs.existsSync(oldImageAbsolutePath)) {
+            fs.unlinkSync(oldImageAbsolutePath);
+            console.log("🗑️ Deleted old image:", oldImageAbsolutePath);
           }
         } catch (deleteError) {
-          console.error("Failed to delete old image:", deleteError);
+          console.error("Failed to delete old image:", oldImageAbsolutePath, deleteError);
         }
       }
       
-      // Set new image URL
-      updateData.image_url = `/images/products/${req.file.filename}`;
+      // Set new image URL (relative path)
+      updateData.image_url = `/uploads/products/${req.file.filename}`;
       console.log("🖼️ Updated image URL to:", updateData.image_url);
     }
 
@@ -200,14 +204,16 @@ export const deleteBarang = async (req, res) => {
 
     // Delete associated image file
     if (barang.image_url) {
-      const imagePath = path.join(__dirname, '../public', barang.image_url);
+      // barang.image_url is like /uploads/products/image.jpg
+      // __dirname is backend/controllers
+      const imageAbsolutePath = path.join(__dirname, '..', barang.image_url);
       try {
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
-          console.log("🗑️ Deleted image file:", imagePath);
+        if (fs.existsSync(imageAbsolutePath)) {
+          fs.unlinkSync(imageAbsolutePath);
+          console.log("🗑️ Deleted image file:", imageAbsolutePath);
         }
       } catch (deleteError) {
-        console.error("Failed to delete image file:", deleteError);
+        console.error("Failed to delete image file:", imageAbsolutePath, deleteError);
       }
     }
 

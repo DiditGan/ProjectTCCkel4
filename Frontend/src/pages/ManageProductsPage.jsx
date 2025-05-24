@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
-import { HiOutlinePlus, HiPencil, HiTrash, HiPhotograph, HiX } from "react-icons/hi";
-import { useAuth } from "../contexts/AuthContext";
+import {
+  HiOutlinePlus,
+  HiPencil,
+  HiTrash,
+  HiPhotograph,
+  HiX,
+} from "react-icons/hi";
 
 // API URL
 const API_BASE_URL = "http://localhost:5000";
@@ -15,19 +20,13 @@ const PRODUCT_CATEGORIES = [
   "Kitchenware",
   "Toys",
   "Sports",
-  "Other"
+  "Other",
 ];
 
 // Product conditions
-const PRODUCT_CONDITIONS = [
-  "Like New",
-  "Good",
-  "Fair",
-  "Poor"
-];
+const PRODUCT_CONDITIONS = ["Like New", "Good", "Fair", "Poor"];
 
 const ManageProductsPage = () => {
-  const { currentUser } = useAuth();
   const [products, setProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -43,7 +42,7 @@ const ManageProductsPage = () => {
     price: "",
     condition: "",
     description: "",
-    images: []
+    images: [],
   });
 
   useEffect(() => {
@@ -54,26 +53,26 @@ const ManageProductsPage = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      const token = localStorage.getItem('accessToken');
+
+      const token = localStorage.getItem("accessToken");
       if (!token) {
         throw new Error("Authentication token not found");
       }
-      
+
       // Fix: Use correct API endpoint for getting user's products
       let url = `${API_BASE_URL}/api/my-barang`;
       if (filterStatus !== "all") {
         url += `?status=${filterStatus}`;
       }
-      
+
       const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch products");
       }
-      
+
       const data = await response.json();
       setProducts(data);
     } catch (error) {
@@ -86,11 +85,11 @@ const ManageProductsPage = () => {
 
   // Format price to Rupiah
   const formatPrice = (price) => {
-    return `Rp ${parseInt(price).toLocaleString('id-ID')}`;
+    return `Rp ${parseInt(price).toLocaleString("id-ID")}`;
   };
 
   // Filter products based on status
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products.filter((product) => {
     if (filterStatus === "all") return true;
     return product.status === filterStatus;
   });
@@ -98,9 +97,9 @@ const ManageProductsPage = () => {
   // Handle input change for new product form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewProduct(prev => ({
+    setNewProduct((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -108,33 +107,35 @@ const ManageProductsPage = () => {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    
+
+    // For simplicity, handling only the first file if multiple are selected.
+    // The backend UploadMiddleware is configured for productUpload.single('image')
     const file = files[0];
-    
+
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
       return;
     }
-    
+
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      alert("File size must be less than 5MB");
       return;
     }
-    
+
     // Store the actual file for upload
-    setNewProduct(prev => ({
+    setNewProduct((prev) => ({
       ...prev,
-      imageFile: file
+      imageFile: file,
     }));
-    
+
     // Create preview for display
     const reader = new FileReader();
     reader.onload = (e) => {
-      setNewProduct(prev => ({
+      setNewProduct((prev) => ({
         ...prev,
-        images: [e.target.result]
+        images: [e.target.result],
       }));
     };
     reader.readAsDataURL(file);
@@ -142,10 +143,10 @@ const ManageProductsPage = () => {
 
   // Remove uploaded image
   const removeImage = (index) => {
-    setNewProduct(prev => ({
+    setNewProduct((prev) => ({
       ...prev,
       images: [],
-      imageFile: null
+      imageFile: null,
     }));
   };
 
@@ -155,43 +156,49 @@ const ManageProductsPage = () => {
 
     try {
       // Simple validation
-      if (!newProduct.name || !newProduct.category || !newProduct.price || !newProduct.condition) {
+      if (
+        !newProduct.name ||
+        !newProduct.category ||
+        !newProduct.price ||
+        !newProduct.condition
+      ) {
         alert("Please fill in all required fields.");
         return;
       }
-      
-      const token = localStorage.getItem('accessToken');
+
+      const token = localStorage.getItem("accessToken");
       if (!token) {
         throw new Error("Authentication token not found");
       }
-      
+
       // Create FormData for file upload
       const formData = new FormData();
-      formData.append('item_name', newProduct.name);
-      formData.append('category', newProduct.category);
-      formData.append('price', parseFloat(newProduct.price));
-      formData.append('condition', newProduct.condition);
-      formData.append('description', newProduct.description);
-      formData.append('status', "available");
-      
+      formData.append("item_name", newProduct.name);
+      formData.append("category", newProduct.category);
+      formData.append("price", parseFloat(newProduct.price));
+      formData.append("condition", newProduct.condition);
+      formData.append("description", newProduct.description || "");
+      formData.append("status", "available"); // Default status
+
       // Add the image file if exists
       if (newProduct.imageFile) {
-        formData.append('image', newProduct.imageFile);
+        formData.append("image", newProduct.imageFile);
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/api/barang`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Content-Type is set automatically for FormData
         },
-        body: formData
+        body: formData,
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.msg || "Failed to create product");
       }
-      
+
       // Reset form and close modal
       setNewProduct({
         name: "",
@@ -199,10 +206,10 @@ const ManageProductsPage = () => {
         price: "",
         condition: "",
         description: "",
-        images: []
+        images: [],
       });
       setShowAddModal(false);
-      
+
       // Refresh products list
       fetchProducts();
     } catch (error) {
@@ -214,37 +221,39 @@ const ManageProductsPage = () => {
   // Handle product status change
   const toggleProductStatus = async (id) => {
     try {
-      const product = products.find(p => p.item_id === id);
+      const product = products.find((p) => p.item_id === id);
       if (!product) return;
-      
+
       const newStatus = product.status === "available" ? "sold" : "available";
-      
-      const token = localStorage.getItem('accessToken');
+
+      const token = localStorage.getItem("accessToken");
       if (!token) {
         throw new Error("Authentication token not found");
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/api/barang/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.msg || "Failed to update product status");
       }
-      
+
       // Update local state
-      setProducts(products.map(product => {
-        if (product.item_id === id) {
-          return { ...product, status: newStatus };
-        }
-        return product;
-      }));
+      setProducts(
+        products.map((product) => {
+          if (product.item_id === id) {
+            return { ...product, status: newStatus };
+          }
+          return product;
+        })
+      );
     } catch (error) {
       console.error("Error updating product status:", error);
       alert(error.message);
@@ -254,23 +263,23 @@ const ManageProductsPage = () => {
   // Delete product
   const handleDeleteProduct = async (id) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem("accessToken");
       if (!token) {
         throw new Error("Authentication token not found");
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/api/barang/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.msg || "Failed to delete product");
       }
-      
+
       // Update local state
-      setProducts(products.filter(product => product.item_id !== id));
+      setProducts(products.filter((product) => product.item_id !== id));
       setShowDeleteConfirm(null);
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -285,7 +294,7 @@ const ManageProductsPage = () => {
       item_id: product.item_id,
       name: product.item_name,
       price: product.price.toString(),
-      images: product.image_url ? [product.image_url] : []
+      images: product.image_url ? [product.image_url] : [],
     });
     setShowEditModal(true);
   };
@@ -293,9 +302,9 @@ const ManageProductsPage = () => {
   // Handle input change for edit product form
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
-    setEditingProduct(prev => ({
+    setEditingProduct((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -303,33 +312,33 @@ const ManageProductsPage = () => {
   const handleEditImageUpload = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    
-    const file = files[0];
-    
+
+    const file = files[0]; // Handle single file for edit as well
+
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
       return;
     }
-    
+
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      alert("File size must be less than 5MB");
       return;
     }
-    
+
     // Store the actual file for upload
-    setEditingProduct(prev => ({
+    setEditingProduct((prev) => ({
       ...prev,
-      imageFile: file
+      imageFile: file,
     }));
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
-      setEditingProduct(prev => ({
+      setEditingProduct((prev) => ({
         ...prev,
-        images: [e.target.result]
+        images: [e.target.result],
       }));
     };
     reader.readAsDataURL(file);
@@ -337,9 +346,9 @@ const ManageProductsPage = () => {
 
   // Remove uploaded image from edit form
   const removeEditImage = (index) => {
-    setEditingProduct(prev => ({
+    setEditingProduct((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: prev.images.filter((_, i) => i !== index),
     }));
   };
 
@@ -349,43 +358,52 @@ const ManageProductsPage = () => {
 
     try {
       // Simple validation
-      if (!editingProduct.name || !editingProduct.category || !editingProduct.price || !editingProduct.condition) {
+      if (
+        !editingProduct.name ||
+        !editingProduct.category ||
+        !editingProduct.price ||
+        !editingProduct.condition
+      ) {
         alert("Please fill in all required fields.");
         return;
       }
-      
-      const token = localStorage.getItem('accessToken');
+
+      const token = localStorage.getItem("accessToken");
       if (!token) {
         throw new Error("Authentication token not found");
       }
-      
+
       // Create FormData for file upload
       const formData = new FormData();
-      formData.append('item_name', editingProduct.name);
-      formData.append('category', editingProduct.category);
-      formData.append('price', parseFloat(editingProduct.price));
-      formData.append('condition', editingProduct.condition);
-      formData.append('description', editingProduct.description);
-      formData.append('status', editingProduct.status);
-      
-      // Add the image file if exists
+      formData.append("item_name", editingProduct.name);
+      formData.append("category", editingProduct.category);
+      formData.append("price", parseFloat(editingProduct.price));
+      formData.append("condition", editingProduct.condition);
+      formData.append("description", editingProduct.description || "");
+      formData.append("status", editingProduct.status);
+
+      // Add the image file if a new one was selected for edit
       if (editingProduct.imageFile) {
-        formData.append('image', editingProduct.imageFile);
+        formData.append("image", editingProduct.imageFile);
       }
-      
-      const response = await fetch(`${API_BASE_URL}/api/barang/${editingProduct.item_id}`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-      
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/barang/${editingProduct.item_id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Content-Type is set automatically for FormData
+          },
+          body: formData,
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.msg || "Failed to update product");
       }
-      
+
       // Close modal and refresh products
       setShowEditModal(false);
       setEditingProduct(null);
@@ -404,7 +422,9 @@ const ManageProductsPage = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Kelola Barang</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Kelola Barang
+          </h1>
           <button
             onClick={() => setShowAddModal(true)}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-300 flex items-center"
@@ -417,8 +437,8 @@ const ManageProductsPage = () => {
         <div className="flex border-b border-gray-200 mb-6">
           <button
             className={`px-4 py-2 font-medium text-sm ${
-              filterStatus === "all" 
-                ? "border-b-2 border-green-600 text-green-600" 
+              filterStatus === "all"
+                ? "border-b-2 border-green-600 text-green-600"
                 : "text-gray-500 hover:text-gray-700"
             }`}
             onClick={() => setFilterStatus("all")}
@@ -427,8 +447,8 @@ const ManageProductsPage = () => {
           </button>
           <button
             className={`px-4 py-2 font-medium text-sm ${
-              filterStatus === "available" 
-                ? "border-b-2 border-green-600 text-green-600" 
+              filterStatus === "available"
+                ? "border-b-2 border-green-600 text-green-600"
                 : "text-gray-500 hover:text-gray-700"
             }`}
             onClick={() => setFilterStatus("available")}
@@ -437,8 +457,8 @@ const ManageProductsPage = () => {
           </button>
           <button
             className={`px-4 py-2 font-medium text-sm ${
-              filterStatus === "sold" 
-                ? "border-b-2 border-green-600 text-green-600" 
+              filterStatus === "sold"
+                ? "border-b-2 border-green-600 text-green-600"
                 : "text-gray-500 hover:text-gray-700"
             }`}
             onClick={() => setFilterStatus("sold")}
@@ -457,7 +477,7 @@ const ManageProductsPage = () => {
           ) : error ? (
             <div className="text-center py-8">
               <p className="text-red-500 mb-4">Error: {error}</p>
-              <button 
+              <button
                 onClick={fetchProducts}
                 className="bg-green-600 text-white px-4 py-2 rounded-md"
               >
@@ -469,22 +489,34 @@ const ManageProductsPage = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Produk
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Harga
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Status
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Statistik
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Tanggal
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Aksi
                     </th>
                   </tr>
@@ -496,58 +528,75 @@ const ManageProductsPage = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0 mr-3">
-                              <img 
-                                className="h-10 w-10 rounded-md object-cover" 
-                                src={product.image_url ? `${API_BASE_URL}${product.image_url}` : "https://via.placeholder.com/40?text=No+Image"} 
-                                alt={product.item_name} 
+                              <img
+                                className="h-10 w-10 rounded-md object-cover"
+                                src={
+                                  product.image_url
+                                    ? `${API_BASE_URL}${product.image_url}`
+                                    : "https://via.placeholder.com/40?text=No+Image"
+                                }
+                                alt={product.item_name}
                                 onError={(e) => {
-                                  e.target.src = "https://via.placeholder.com/40?text=No+Image";
+                                  e.target.src =
+                                    "https://via.placeholder.com/40?text=No+Image";
                                 }}
                               />
                             </div>
                             <div>
-                              <div className="text-sm font-medium text-gray-900">{product.item_name}</div>
-                              <div className="text-sm text-gray-500">{product.category}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {product.item_name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {product.category}
+                              </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 font-medium">{formatPrice(product.price)}</div>
-                          <div className="text-sm text-gray-500">{product.condition}</div>
+                          <div className="text-sm text-gray-900 font-medium">
+                            {formatPrice(product.price)}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {product.condition}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            product.status === "available" 
-                              ? "bg-green-100 text-green-800" 
-                              : "bg-gray-100 text-gray-800"
-                          }`}>
-                            {product.status === "available" ? "Tersedia" : "Terjual"}
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              product.status === "available"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {product.status === "available"
+                              ? "Tersedia"
+                              : "Terjual"}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div>Dilihat: {product.views || 0}</div>
-                          <div>Tertarik: {product.interested_count || 0}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(product.date_posted).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button 
+                          <button
                             onClick={() => toggleProductStatus(product.item_id)}
                             className="text-blue-600 hover:text-blue-900 mr-3"
                           >
-                            {product.status === "available" ? "Tandai Terjual" : "Tandai Tersedia"}
+                            {product.status === "available"
+                              ? "Tandai Terjual"
+                              : "Tandai Tersedia"}
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleEditClick(product)}
                             className="text-green-600 hover:text-green-900 mr-3"
                             title="Edit"
                           >
                             <HiPencil />
                           </button>
-                          <button 
-                            onClick={() => setShowDeleteConfirm(product.item_id)}
-                            className="text-red-600 hover:text-red-900" 
+                          <button
+                            onClick={() =>
+                              setShowDeleteConfirm(product.item_id)
+                            }
+                            className="text-red-600 hover:text-red-900"
                             title="Delete"
                           >
                             <HiTrash />
@@ -557,7 +606,10 @@ const ManageProductsPage = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                      <td
+                        colSpan="6"
+                        className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500"
+                      >
                         Tidak ada barang yang ditemukan
                       </td>
                     </tr>
@@ -574,18 +626,23 @@ const ManageProductsPage = () => {
         <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center px-6 py-4 border-b">
-              <h3 className="text-lg font-medium text-gray-900">Tambah Barang Baru</h3>
-              <button 
+              <h3 className="text-lg font-medium text-gray-900">
+                Tambah Barang Baru
+              </h3>
+              <button
                 onClick={() => setShowAddModal(false)}
                 className="text-gray-400 hover:text-gray-500"
               >
                 <HiX className="h-5 w-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6">
               <div className="mb-4">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Nama Barang <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -599,10 +656,13 @@ const ManageProductsPage = () => {
                   required
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="category"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Kategori <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -614,14 +674,19 @@ const ManageProductsPage = () => {
                     required
                   >
                     <option value="">Pilih Kategori</option>
-                    {PRODUCT_CATEGORIES.map(category => (
-                      <option key={category} value={category}>{category}</option>
+                    {PRODUCT_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="price"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Harga (Rp) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -637,9 +702,12 @@ const ManageProductsPage = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="mb-4">
-                <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="condition"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Kondisi <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -651,14 +719,19 @@ const ManageProductsPage = () => {
                   required
                 >
                   <option value="">Pilih Kondisi</option>
-                  {PRODUCT_CONDITIONS.map(condition => (
-                    <option key={condition} value={condition}>{condition}</option>
+                  {PRODUCT_CONDITIONS.map((condition) => (
+                    <option key={condition} value={condition}>
+                      {condition}
+                    </option>
                   ))}
                 </select>
               </div>
-              
+
               <div className="mb-4">
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Deskripsi Barang
                 </label>
                 <textarea
@@ -671,18 +744,21 @@ const ManageProductsPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 ></textarea>
               </div>
-              
+
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Foto Barang
                 </label>
-                
+
                 <div className="grid grid-cols-3 gap-2 mb-2">
                   {newProduct.images.map((image, index) => (
-                    <div key={index} className="relative h-24 bg-gray-100 rounded-md overflow-hidden">
-                      <img 
-                        src={image} 
-                        alt={`Preview ${index + 1}`} 
+                    <div
+                      key={index}
+                      className="relative h-24 bg-gray-100 rounded-md overflow-hidden"
+                    >
+                      <img
+                        src={image}
+                        alt={`Preview ${index + 1}`}
                         className="h-full w-full object-cover"
                       />
                       <button
@@ -695,13 +771,13 @@ const ManageProductsPage = () => {
                       </button>
                     </div>
                   ))}
-                  
-                  {newProduct.images.length < 5 && (
+
+                  {newProduct.images.length < 1 && ( // Allow only one image based on backend single upload
                     <label className="h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50">
                       <input
                         type="file"
                         accept="image/*"
-                        multiple
+                        // multiple // Remove multiple if backend handles single
                         onChange={handleImageUpload}
                         className="hidden"
                       />
@@ -714,12 +790,13 @@ const ManageProductsPage = () => {
                     </label>
                   )}
                 </div>
-                
+
                 <p className="text-xs text-gray-500">
-                  Anda dapat mengunggah hingga 5 foto. Format: JPG, PNG. Ukuran maksimum: 5MB per foto.
+                  Anda dapat mengunggah 1 foto. Format: JPG, PNG. Ukuran
+                  maksimum: 5MB.
                 </p>
               </div>
-              
+
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -746,7 +823,7 @@ const ManageProductsPage = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center px-6 py-4 border-b">
               <h3 className="text-lg font-medium text-gray-900">Edit Barang</h3>
-              <button 
+              <button
                 onClick={() => {
                   setShowEditModal(false);
                   setEditingProduct(null);
@@ -756,10 +833,13 @@ const ManageProductsPage = () => {
                 <HiX className="h-5 w-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleEditSubmit} className="p-6">
               <div className="mb-4">
-                <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="edit-name"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Nama Barang <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -773,10 +853,13 @@ const ManageProductsPage = () => {
                   required
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="edit-category"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Kategori <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -788,14 +871,19 @@ const ManageProductsPage = () => {
                     required
                   >
                     <option value="">Pilih Kategori</option>
-                    {PRODUCT_CATEGORIES.map(category => (
-                      <option key={category} value={category}>{category}</option>
+                    {PRODUCT_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
-                  <label htmlFor="edit-price" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="edit-price"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Harga (Rp) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -811,9 +899,12 @@ const ManageProductsPage = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="mb-4">
-                <label htmlFor="edit-condition" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="edit-condition"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Kondisi <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -825,14 +916,19 @@ const ManageProductsPage = () => {
                   required
                 >
                   <option value="">Pilih Kondisi</option>
-                  {PRODUCT_CONDITIONS.map(condition => (
-                    <option key={condition} value={condition}>{condition}</option>
+                  {PRODUCT_CONDITIONS.map((condition) => (
+                    <option key={condition} value={condition}>
+                      {condition}
+                    </option>
                   ))}
                 </select>
               </div>
-              
+
               <div className="mb-4">
-                <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="edit-description"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Deskripsi Barang
                 </label>
                 <textarea
@@ -845,9 +941,12 @@ const ManageProductsPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 ></textarea>
               </div>
-              
+
               <div className="mb-4">
-                <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="edit-status"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Status Barang
                 </label>
                 <select
@@ -861,18 +960,25 @@ const ManageProductsPage = () => {
                   <option value="sold">Terjual</option>
                 </select>
               </div>
-              
+
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Foto Barang
                 </label>
-                
+
                 <div className="grid grid-cols-3 gap-2 mb-2">
                   {editingProduct.images.map((image, index) => (
-                    <div key={index} className="relative h-24 bg-gray-100 rounded-md overflow-hidden">
-                      <img 
-                        src={image} 
-                        alt={`Preview ${index + 1}`} 
+                    <div
+                      key={index}
+                      className="relative h-24 bg-gray-100 rounded-md overflow-hidden"
+                    >
+                      <img
+                        src={
+                          image.startsWith("blob:")
+                            ? image
+                            : `${API_BASE_URL}${image}`
+                        }
+                        alt={`Preview ${index + 1}`}
                         className="h-full w-full object-cover"
                       />
                       <button
@@ -885,13 +991,13 @@ const ManageProductsPage = () => {
                       </button>
                     </div>
                   ))}
-                  
-                  {editingProduct.images.length < 5 && (
+
+                  {editingProduct.images.length < 1 && ( // Allow only one image
                     <label className="h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50">
                       <input
                         type="file"
                         accept="image/*"
-                        multiple
+                        // multiple // Remove multiple
                         onChange={handleEditImageUpload}
                         className="hidden"
                       />
@@ -904,12 +1010,13 @@ const ManageProductsPage = () => {
                     </label>
                   )}
                 </div>
-                
+
                 <p className="text-xs text-gray-500">
-                  Anda dapat mengunggah hingga 5 foto. Format: JPG, PNG. Ukuran maksimum: 5MB per foto.
+                  Anda dapat mengunggah 1 foto. Format: JPG, PNG. Ukuran
+                  maksimum: 5MB.
                 </p>
               </div>
-              
+
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -938,9 +1045,12 @@ const ManageProductsPage = () => {
         <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Konfirmasi Hapus</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Konfirmasi Hapus
+              </h3>
               <p className="text-gray-600 mb-6">
-                Apakah Anda yakin ingin menghapus barang ini? Tindakan ini tidak dapat dibatalkan.
+                Apakah Anda yakin ingin menghapus barang ini? Tindakan ini tidak
+                dapat dibatalkan.
               </p>
               <div className="flex justify-end">
                 <button

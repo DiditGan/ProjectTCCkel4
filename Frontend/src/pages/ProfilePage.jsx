@@ -8,7 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 const API_BASE_URL = "http://localhost:5000";
 
 const ProfilePage = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, updateUserData } = useAuth(); // Add updateUserData
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [sales, setSales] = useState([]);
@@ -108,7 +108,8 @@ const ProfilePage = () => {
   const getProfileImageUrl = (imagePath) => {
     if (!imagePath) return "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
     if (imagePath.startsWith('http')) return imagePath;
-    return `${API_BASE_URL}${imagePath}`;
+    // Assuming imagePath from backend is like /uploads/profiles/image.jpg
+    return `${API_BASE_URL}${imagePath}`; 
   };
 
   // Handle profile image upload
@@ -162,8 +163,8 @@ const ProfilePage = () => {
         const formData = new FormData();
         formData.append('name', editData.name);
         formData.append('email', editData.email);
-        formData.append('phone_number', editData.phone);
-        formData.append('address', editData.address);
+        formData.append('phone_number', editData.phone || ''); // Ensure empty string if null/undefined
+        formData.append('address', editData.address || ''); // Ensure empty string
         
         // Add profile image file if selected
         if (profileImageFile) {
@@ -173,14 +174,14 @@ const ProfilePage = () => {
         
         // Log form data for debugging
         for (let [key, value] of formData.entries()) {
-          console.log(`${key}: ${value instanceof File ? value.name : value}`);
+          console.log(`FormData - ${key}: ${value instanceof File ? value.name : value}`);
         }
         
         const response = await fetch(`${API_BASE_URL}/api/profile`, {
           method: 'PUT',
           headers: { 
             'Authorization': `Bearer ${token}`
-            // Don't set Content-Type for FormData
+            // 'Content-Type' is automatically set by browser for FormData
           },
           body: formData
         });
@@ -195,6 +196,7 @@ const ProfilePage = () => {
         
         // Update local user state with new data
         setUser(data.user);
+        updateUserData(data.user); // Update AuthContext
         setEditData({
           name: data.user.name,
           email: data.user.email,
@@ -276,8 +278,8 @@ const ProfilePage = () => {
                 <div className="p-6 text-center border-b">
                   <div className="relative inline-block mb-3">
                     <img
-                      src={imagePreview || getProfileImageUrl(user.profile_picture)}
-                      alt={user.name}
+                      src={imagePreview || getProfileImageUrl(user?.profile_picture)}
+                      alt={user?.name || 'User'}
                       className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-green-100"
                       onError={(e) => {
                         e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
@@ -289,10 +291,10 @@ const ProfilePage = () => {
                       </div>
                     )}
                   </div>
-                  <h3 className="font-bold text-xl text-gray-800">{user.name}</h3>
-                  <p className="text-sm text-gray-600">{user.email}</p>
+                  <h3 className="font-bold text-xl text-gray-800">{user?.name || 'User Name'}</h3>
+                  <p className="text-sm text-gray-600">{user?.email || 'user@example.com'}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Bergabung sejak {formatDate(user.createdAt || user.created_at || new Date().toISOString())}
+                    Bergabung sejak {formatDate(user?.createdAt || user?.created_at || new Date().toISOString())}
                   </p>
                 </div>
 
@@ -526,8 +528,8 @@ const ProfilePage = () => {
                       <div className="mb-6 flex flex-col items-center">
                         <div className="relative">
                           <img
-                            src={imagePreview || getProfileImageUrl(user.profile_picture)}
-                            alt={user.name}
+                            src={imagePreview || getProfileImageUrl(user?.profile_picture)}
+                            alt={user?.name || 'User'}
                             className="w-32 h-32 rounded-full object-cover border-4 border-green-100"
                             onError={(e) => {
                               e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
@@ -571,12 +573,12 @@ const ProfilePage = () => {
                             <input
                               type="text"
                               name="name"
-                              value={editData.name}
+                              value={editData.name || ''}
                               onChange={handleInputChange}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
                             />
                           ) : (
-                            <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user.name}</p>
+                            <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user?.name}</p>
                           )}
                         </div>
                         <div>
@@ -587,12 +589,12 @@ const ProfilePage = () => {
                             <input
                               type="email"
                               name="email"
-                              value={editData.email}
+                              value={editData.email || ''}
                               onChange={handleInputChange}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
                             />
                           ) : (
-                            <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user.email}</p>
+                            <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user?.email}</p>
                           )}
                         </div>
                       </div>
@@ -604,12 +606,12 @@ const ProfilePage = () => {
                           <input
                             type="tel"
                             name="phone"
-                            value={editData.phone}
+                            value={editData.phone || ''}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
                           />
                         ) : (
-                          <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user.phone_number || '-'}</p>
+                          <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user?.phone_number || '-'}</p>
                         )}
                       </div>
                       <div>
@@ -619,13 +621,13 @@ const ProfilePage = () => {
                         {isEditing ? (
                           <textarea
                             name="address"
-                            value={editData.address}
+                            value={editData.address || ''}
                             onChange={handleInputChange}
                             rows="3"
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
                           ></textarea>
                         ) : (
-                          <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user.address || '-'}</p>
+                          <p className="py-2 px-3 bg-gray-50 rounded-md text-gray-800">{user?.address || '-'}</p>
                         )}
                       </div>
                       

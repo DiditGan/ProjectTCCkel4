@@ -72,13 +72,14 @@ export const updateMyProfile = async (req, res) => {
 
     // Build update data with only provided fields
     const updateData = {};
-    if (email) updateData.email = email;
-    if (name) updateData.name = name;
+    if (email !== undefined) updateData.email = email; // Check for undefined to allow clearing fields
+    if (name !== undefined) updateData.name = name;
     if (phone_number !== undefined) updateData.phone_number = phone_number;
     if (address !== undefined) updateData.address = address;
 
     // Handle profile picture upload
     if (req.file) {
+      // The path should be relative to the server's static serving root for 'uploads'
       updateData.profile_picture = `/uploads/profiles/${req.file.filename}`;
       console.log("📸 Profile picture updated to:", updateData.profile_picture);
     }

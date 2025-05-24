@@ -55,14 +55,6 @@ const Product = db.define("barang", {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW,
-  },
-  views: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  interested_count: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
   }
 }, {
   timestamps: true,

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { HiOutlineShoppingCart, HiOutlinePhone, HiArrowLeft, HiOutlineLocationMarker } from "react-icons/hi";
+import { HiOutlineShoppingCart, HiArrowLeft, HiOutlineLocationMarker } from "react-icons/hi"; 
 import { useAuth } from "../contexts/AuthContext";
 
 // API URL
@@ -60,24 +60,6 @@ const DetailPage = () => {
   // Format price to Rupiah
   const formatPrice = (price) => {
     return `Rp ${parseInt(price).toLocaleString('id-ID')}`;
-  };
-
-  const handleContactSeller = () => {
-    if (!currentUser) {
-      // Redirect to login if not authenticated
-      navigate('/login', { state: { from: `/details/${id}` } });
-      return;
-    }
-    
-    // Navigate to messages page with seller and product info
-    navigate('/messages', { 
-      state: { 
-        recipientId: product.user?.user_id, 
-        recipientName: product.user?.name,
-        productId: product.item_id,
-        productName: product.item_name
-      } 
-    });
   };
 
   if (isLoading) {
@@ -191,20 +173,13 @@ const DetailPage = () => {
               
               {/* Action buttons */}
               <div className="mt-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex justify-center">
                   <button 
                     onClick={() => navigate('/checkout', { state: { productId: product.item_id } })}
                     className="bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition flex items-center justify-center"
                   >
                     <HiOutlineShoppingCart className="mr-2" />
                     Beli
-                  </button>
-                  <button 
-                    onClick={handleContactSeller}
-                    className="bg-green-100 text-green-800 py-3 px-6 rounded-lg font-medium hover:bg-green-200 transition flex items-center justify-center"
-                  >
-                    <HiOutlinePhone className="mr-2" />
-                    Contact Seller
                   </button>
                 </div>
               </div>

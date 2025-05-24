@@ -13,7 +13,6 @@ This document provides comprehensive documentation for the backend API of the RA
    - [User Management](#user-management)
    - [Product Management](#product-management)
    - [Transaction Management](#transaction-management)
-   - [Chat System](#chat-system)
 5. [Error Handling](#error-handling)
 6. [Authentication Flow](#authentication-flow)
 
@@ -95,8 +94,6 @@ Products or items listed by users for sale, exchange, or donation.
   location: String,
   image_url: String,
   date_posted: DateTime,
-  views: Integer,
-  interested_count: Integer,
   created_at: DateTime,
   updated_at: DateTime
 }
@@ -118,31 +115,6 @@ Records of transactions between users for products.
   status: Enum ["pending", "completed", "cancelled"],
   payment_method: String,
   shipping_address: Text,
-  created_at: DateTime,
-  updated_at: DateTime
-}
-```
-
-### Conversation & Message Models
-
-Support for chat functionality between users.
-
-```javascript
-// Conversation
-{
-  conversation_id: Integer (Primary Key, Auto Increment),
-  product_id: Integer (Foreign Key to Barang, Optional),
-  created_at: DateTime,
-  updated_at: DateTime
-}
-
-// Message
-{
-  message_id: Integer (Primary Key, Auto Increment),
-  conversation_id: Integer (Foreign Key to Conversation),
-  sender_id: Integer (Foreign Key to User),
-  content: Text,
-  timestamp: DateTime,
   created_at: DateTime,
   updated_at: DateTime
 }
@@ -325,37 +297,6 @@ Support for chat functionality between users.
   - Description: Delete transaction
   - Authentication: Required
   - Response: `{ "msg": "Transaksi berhasil dihapus" }`
-
-### Chat System
-
-- **GET /api/chat/conversations**
-  - Description: Get all conversations for current user
-  - Authentication: Required
-  - Response: Array of conversation objects with latest messages
-
-- **GET /api/chat/conversations/:conversation_id/messages**
-  - Description: Get messages in conversation
-  - Authentication: Required
-  - Response: Array of message objects
-
-- **POST /api/chat/conversations/:conversation_id/messages**
-  - Description: Send message
-  - Authentication: Required
-  - Request Body for existing conversation:
-    ```json
-    {
-      "content": "Message text"
-    }
-    ```
-  - Request Body for new conversation (use "new" as conversation_id):
-    ```json
-    {
-      "content": "Message text",
-      "recipient_id": 2,
-      "product_id": 10
-    }
-    ```
-  - Response: Created message object
 
 ## Error Handling
 

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
+import User from "../models/UserModel.js"; // Import User model
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => { // Make function async
   const authHeader = req.headers.authorization;
   
   // Check if Authorization header exists
@@ -28,11 +29,27 @@ export const verifyToken = (req, res, next) => {
     const decoded = jwt.verify(token, secretKey);
     
     // Log for debugging
-    console.log("Token verified:", decoded);
+    console.log("Token decoded:", decoded);
+
+    // Check if user_id exists in decoded payload
+    if (!decoded.user_id) {
+      console.error("Token does not contain user_id:", decoded);
+      return res.status(403).json({ msg: "Token tidak valid (tidak ada user ID)" });
+    }
+    
+    // Verify if the user still exists in the database
+    const user = await User.findByPk(decoded.user_id);
+    if (!user) {
+      console.warn(`User with ID ${decoded.user_id} from token not found in database.`);
+      return res.status(401).json({ msg: "User tidak lagi terautentikasi atau tidak ditemukan." });
+    }
     
     // Add user ID to request for use in controllers
     req.userId = decoded.user_id;
+    // Optionally, attach the user object itself if needed frequently in controllers
+    // req.user = user; 
     
+    console.log("Token verified successfully for user ID:", req.userId);
     // Continue to the next middleware or route handler
     next();
   } catch (err) {
@@ -44,7 +61,8 @@ export const verifyToken = (req, res, next) => {
     } else if (err.name === "JsonWebTokenError") {
       return res.status(403).json({ msg: "Token tidak valid" });
     } else {
-      return res.status(403).json({ msg: "Error verifikasi token" });
+      // This might catch errors from User.findByPk if it's not a JWT specific error
+      return res.status(500).json({ msg: "Error verifikasi token atau server" });
     }
   }
 };
