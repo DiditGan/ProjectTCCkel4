@@ -6,6 +6,8 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+const API_BASE_URL = 'http://localhost:5000'; // Ensure this is the correct base URL for your API
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -119,13 +121,46 @@ export function AuthProvider({ children }) {
     }
   };
   
+  // Add deleteAccount function
+  const deleteAccount = async (password) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/deleteAccount`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.msg || 'Failed to delete account');
+      }
+
+      // After successful deletion, logout the user
+      await logout();
+      return { success: true, message: 'Account deleted successfully' };
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      throw error;
+    }
+  };
+
   const value = {
     currentUser,
     loading,
     login,
     register,
     logout,
-    updateUserData
+    updateUserData,
+    deleteAccount, // Add deleteAccount to the context value
   };
   
   return (

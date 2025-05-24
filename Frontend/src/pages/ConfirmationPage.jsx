@@ -55,14 +55,24 @@ const ConfirmationPage = () => {
             </div>
             
             <div className="flex items-center mb-4 pb-4 border-b">
-              <img
-                src={transaction.product.imageUrl || "https://via.placeholder.com/150?text=No+Image"}
-                alt={transaction.product.name}
-                className="w-16 h-16 object-cover rounded-md mr-4"
-                onError={(e) => {
-                  e.target.src = "https://via.placeholder.com/150?text=No+Image";
-                }}
-              />
+              {transaction.product.imageUrl ? (
+                <img
+                  src={transaction.product.imageUrl}
+                  alt={transaction.product.name}
+                  className="w-16 h-16 object-cover rounded-md mr-4 bg-gray-100"
+                  onError={(e) => {
+                    e.target.onerror = null; // Prevent infinite loop
+                    e.target.parentNode.classList.add("bg-gray-300");
+                    e.target.classList.add("opacity-0");
+                  }}
+                />
+              ) : (
+                <div className="w-16 h-16 bg-gray-300 rounded-md mr-4 flex items-center justify-center animate-pulse">
+                  <svg className="w-6 h-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
               <div>
                 <h3 className="font-medium text-gray-800">{transaction.product.name}</h3>
                 <p className="text-sm text-gray-600">Jumlah: {transaction.quantity}</p>

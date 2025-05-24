@@ -1,5 +1,16 @@
 import User from "../models/UserModel.js";
+import Barang from "../models/BarangModel.js";
+import Transaksi from "../models/TransaksiModel.js";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
+import db from "../config/database.js";
+import { Op } from "sequelize";
+import { fileURLToPath } from 'url';
+
+// Get current directory (ES Module equivalent of __dirname)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const getUsers = async (req, res) => {
   try {
@@ -139,6 +150,89 @@ export const deleteUserById = async (req, res) => {
     res.json({ msg: "User berhasil dihapus" });
   } catch (error) {
     res.status(400).json({ msg: error.message });
+  }
+};
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const user_id = req.userId;
+    const { password } = req.body;
+    
+    // Find user
+    const user = await User.findByPk(user_id);
+    if (!user) return res.status(404).json({ msg: "User tidak ditemukan" });
+    
+    // Verify password for security
+    if (password) {
+      const match = await bcrypt.compare(password, user.password);
+      if (!match) {
+        return res.status(401).json({ msg: "Password salah, verifikasi gagal" });
+      }
+    }
+    
+    // Begin transaction to ensure all related operations complete or rollback
+    const transaction = await db.transaction();
+    
+    try {
+      // Delete user's profile picture if exists
+      if (user.profile_picture && user.profile_picture.startsWith('/uploads/')) {
+        const imagePath = path.join(__dirname, '..', user.profile_picture);
+        try {
+          if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+            console.log(`Deleted user profile image: ${imagePath}`);
+          }
+        } catch (err) {
+          console.error(`Error deleting profile image: ${err.message}`);
+        }
+      }
+      
+      // Find all barang (items) owned by the user
+      const userItems = await Barang.findAll({ where: { user_id }, transaction });
+      
+      // Delete item images
+      for (const item of userItems) {
+        if (item.image_url && item.image_url.startsWith('/uploads/')) {
+          const imagePath = path.join(__dirname, '..', item.image_url);
+          try {
+            if (fs.existsSync(imagePath)) {
+              fs.unlinkSync(imagePath);
+              console.log(`Deleted item image: ${imagePath}`);
+            }
+          } catch (err) {
+            console.error(`Error deleting item image: ${err.message}`);
+          }
+        }
+      }
+      
+      // Delete user's barangs
+      await Barang.destroy({ where: { user_id }, transaction });
+      console.log(`Deleted all items for user ${user_id}`);
+      
+      // Delete user's transactions - both as buyer and seller
+      await Transaksi.destroy({ 
+        where: { 
+          [Op.or]: [{ buyer_id: user_id }, { seller_id: user_id }] 
+        }, 
+        transaction 
+      });
+      console.log(`Deleted all transactions for user ${user_id}`);
+      
+      // Finally delete the user
+      await User.destroy({ where: { user_id }, transaction });
+      console.log(`Deleted user ${user_id}`);
+      
+      await transaction.commit();
+      
+      // Return success response
+      res.json({ msg: "Akun berhasil dihapus. Semua data terkait telah dihapus." });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    res.status(500).json({ msg: error.message });
   }
 };
 

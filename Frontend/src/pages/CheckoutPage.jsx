@@ -73,7 +73,7 @@ const CheckoutPage = () => {
           throw new Error("This item is no longer available");
         }
         
-        // Prepare product data for checkout
+        // Prepare product data for checkout with proper image handling
         setProduct({
           id: productData.item_id,
           name: productData.item_name,
@@ -86,7 +86,7 @@ const CheckoutPage = () => {
             ? (productData.image_url.startsWith('http') 
               ? productData.image_url 
               : `${API_BASE_URL}${productData.image_url}`)
-            : "https://via.placeholder.com/150?text=No+Image"
+            : null // Return null to trigger skeleton UI instead of placeholder
         });
         
         // Fetch user profile for pre-filling customer info
@@ -434,14 +434,24 @@ const CheckoutPage = () => {
               
               {/* Product Info */}
               <div className="flex items-center mb-4 pb-4 border-b">
-                <img
-                  src={product?.imageUrl}
-                  alt={product?.name}
-                  className="w-16 h-16 object-cover rounded-md mr-4"
-                  onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/150?text=No+Image";
-                  }}
-                />
+                {product?.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product?.name}
+                    className="w-16 h-16 object-cover rounded-md mr-4 bg-gray-100"
+                    onError={(e) => {
+                      e.target.onerror = null; // Prevent infinite loop
+                      e.target.parentNode.classList.add("bg-gray-300");
+                      e.target.classList.add("opacity-0");
+                    }}
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-300 rounded-md mr-4 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
                 <div className="flex-1">
                   <h3 className="font-medium text-gray-800">{product?.name}</h3>
                   <p className="text-sm text-gray-600">Penjual: {product?.seller}</p>

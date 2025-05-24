@@ -152,6 +152,19 @@ Authorization: Bearer {{accessToken}}
 DELETE {{host}}/transaksi/1
 Authorization: Bearer {{accessToken}}
 
+### Delete Transaksi (With better access control)
+DELETE {{host}}/transaksi/1
+Authorization: Bearer {{accessToken}}
+
+### Delete User Account (Requires password verification)
+DELETE {{host}}/api/deleteAccount
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "password": "password123"
+}
+
 ### Update Profile with Image (Multipart Form)
 PUT {{host}}/api/profile
 Authorization: Bearer {{accessToken}}

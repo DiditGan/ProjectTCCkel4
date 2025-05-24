@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { HiUser, HiShoppingBag, HiClipboardList, HiCog, HiLogout, HiEye, HiOutlinePhotograph } from "react-icons/hi";
+import { 
+  HiUser, HiShoppingBag, HiClipboardList, HiCog, HiLogout, 
+  HiEye, HiOutlinePhotograph, HiTrash, HiExclamationCircle, 
+  HiOutlineLockClosed 
+} from "react-icons/hi";
 import { useAuth } from "../contexts/AuthContext";
 
 // Define the API base URL for real API calls
 const API_BASE_URL = "http://localhost:5000";
 
 const ProfilePage = () => {
-  const { currentUser, logout, updateUserData } = useAuth(); // Add updateUserData
+  const { currentUser, logout, updateUserData, deleteAccount } = useAuth(); 
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [sales, setSales] = useState([]);
@@ -21,6 +25,16 @@ const ProfilePage = () => {
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // New state variables for account deletion
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  
+  // New state variable for transaction deletion
+  const [showDeleteTransactionModal, setShowDeleteTransactionModal] = useState(null);
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -104,12 +118,12 @@ const ProfilePage = () => {
     }));
   };
 
-  // Helper function to get full profile image URL
+  // Helper function to get full profile image URL with better error handling
   const getProfileImageUrl = (imagePath) => {
-    if (!imagePath) return "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+    if (!imagePath) return null; // Return null to trigger skeleton UI
     if (imagePath.startsWith('http')) return imagePath;
-    // Assuming imagePath from backend is like /uploads/profiles/image.jpg
-    return `${API_BASE_URL}${imagePath}`; 
+    // Ensure path starts with /
+    return `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`; 
   };
 
   // Handle profile image upload
@@ -246,6 +260,58 @@ const ProfilePage = () => {
     }).format(date);
   };
 
+  const handleDeleteTransaction = async (transactionId) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/transaksi/${transactionId}`, {
+        method: 'DELETE',
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || "Failed to delete transaction");
+      }
+      
+      // Update state to remove the deleted transaction
+      if (activeTab === "purchases") {
+        setTransactions(transactions.filter(t => t.transaction_id !== transactionId));
+      } else {
+        setSales(sales.filter(t => t.transaction_id !== transactionId));
+      }
+      
+      setShowDeleteTransactionModal(null);
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      alert(error.message);
+    }
+  };
+  
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setDeleteError("Please enter your password");
+      return;
+    }
+    
+    try {
+      setIsDeleting(true);
+      setDeleteError("");
+      
+      await deleteAccount(deletePassword);
+      // If successful, user will be logged out and redirected automatically
+      
+    } catch (error) {
+      setDeleteError(error.message || "Failed to delete account");
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -277,14 +343,24 @@ const ProfilePage = () => {
                 {/* User Info in Sidebar */}
                 <div className="p-6 text-center border-b">
                   <div className="relative inline-block mb-3">
-                    <img
-                      src={imagePreview || getProfileImageUrl(user?.profile_picture)}
-                      alt={user?.name || 'User'}
-                      className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-green-100"
-                      onError={(e) => {
-                        e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
-                      }}
-                    />
+                    {imagePreview || getProfileImageUrl(user?.profile_picture) ? (
+                      <img
+                        src={imagePreview || getProfileImageUrl(user?.profile_picture)}
+                        alt={user?.name || 'User'}
+                        className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-green-100"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.parentNode.classList.add("bg-gray-300");
+                          e.target.classList.add("opacity-0");
+                        }}
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-full mx-auto bg-gray-300 border-4 border-green-100 flex items-center justify-center animate-pulse">
+                        <svg className="w-12 h-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                    )}
                     {isEditing && activeTab === "settings" && (
                       <div className="absolute bottom-0 right-0 w-full h-full flex items-center justify-center bg-black bg-opacity-40 rounded-full opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
                         <span className="text-white text-xs font-medium">Edit Foto</span>
@@ -351,6 +427,15 @@ const ProfilePage = () => {
                     </li>
                     <li className="border-t pt-2 mt-2">
                       <button 
+                        onClick={() => setShowDeleteAccountModal(true)}
+                        className="w-full flex items-center px-3 py-2 rounded-md text-left text-red-600 hover:bg-red-50 transition"
+                      >
+                        <HiTrash className="mr-3" />
+                        Hapus Akun
+                      </button>
+                    </li>
+                    <li>
+                      <button 
                         onClick={handleLogout}
                         className="w-full flex items-center px-3 py-2 rounded-md text-left text-red-600 hover:bg-red-50 transition"
                       >
@@ -386,14 +471,24 @@ const ProfilePage = () => {
                             </div>
                             
                             <div className="flex items-center">
-                              <img
-                                src={getProfileImageUrl(transaction.item?.image_url || transaction.product?.imageUrl)}
-                                alt={transaction.item?.item_name || transaction.product?.name}
-                                className="w-16 h-16 object-cover rounded-md mr-4"
-                                onError={(e) => {
-                                  e.target.src = "https://via.placeholder.com/150?text=No+Image";
-                                }}
-                              />
+                              {getProfileImageUrl(transaction.item?.image_url || transaction.product?.imageUrl) ? (
+                                <img
+                                  src={getProfileImageUrl(transaction.item?.image_url || transaction.product?.imageUrl)}
+                                  alt={transaction.item?.item_name || transaction.product?.name}
+                                  className="w-16 h-16 object-cover rounded-md mr-4 bg-gray-100"
+                                  onError={(e) => {
+                                    e.target.onerror = null; // Prevent infinite loop
+                                    e.target.parentNode.classList.add("bg-gray-300");
+                                    e.target.classList.add("opacity-0");
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-16 h-16 bg-gray-300 rounded-md mr-4 flex items-center justify-center animate-pulse">
+                                  <svg className="w-6 h-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                              )}
                               <div className="flex-1">
                                 <h4 className="font-medium text-gray-800">{transaction.item?.item_name || transaction.product?.name}</h4>
                                 <p className="text-sm text-gray-600">
@@ -410,10 +505,19 @@ const ProfilePage = () => {
                                 <p className="font-semibold text-green-600">
                                   Rp {(transaction.total_price || transaction.total || 0).toLocaleString('id-ID')}
                                 </p>
-                                <button className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center justify-end">
-                                  <span>Lihat Detail</span>
-                                  <HiEye className="ml-1" />
-                                </button>
+                                <div className="flex items-center justify-end mt-1">
+                                  <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center mr-3">
+                                    <span>Lihat Detail</span>
+                                    <HiEye className="ml-1" />
+                                  </button>
+                                  <button 
+                                    onClick={() => setShowDeleteTransactionModal(transaction.transaction_id || transaction.id)}
+                                    className="text-sm text-red-600 hover:text-red-800 flex items-center"
+                                  >
+                                    <span>Hapus</span>
+                                    <HiTrash className="ml-1" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -453,14 +557,24 @@ const ProfilePage = () => {
                             </div>
                             
                             <div className="flex items-center">
-                              <img
-                                src={getProfileImageUrl(sale.item?.image_url || sale.product?.imageUrl)}
-                                alt={sale.item?.item_name || sale.product?.name}
-                                className="w-16 h-16 object-cover rounded-md mr-4"
-                                onError={(e) => {
-                                  e.target.src = "https://via.placeholder.com/150?text=No+Image";
-                                }}
-                              />
+                              {getProfileImageUrl(sale.item?.image_url || sale.product?.imageUrl) ? (
+                                <img
+                                  src={getProfileImageUrl(sale.item?.image_url || sale.product?.imageUrl)}
+                                  alt={sale.item?.item_name || sale.product?.name}
+                                  className="w-16 h-16 object-cover rounded-md mr-4 bg-gray-100"
+                                  onError={(e) => {
+                                    e.target.onerror = null; // Prevent infinite loop
+                                    e.target.parentNode.classList.add("bg-gray-300");
+                                    e.target.classList.add("opacity-0");
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-16 h-16 bg-gray-300 rounded-md mr-4 flex items-center justify-center animate-pulse">
+                                  <svg className="w-6 h-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                              )}
                               <div className="flex-1">
                                 <h4 className="font-medium text-gray-800">{sale.item?.item_name || sale.product?.name}</h4>
                                 <p className="text-sm text-gray-600">
@@ -474,10 +588,19 @@ const ProfilePage = () => {
                                 <p className="font-semibold text-green-600">
                                   Rp {(sale.total_price || sale.total || 0).toLocaleString('id-ID')}
                                 </p>
-                                <button className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center justify-end">
-                                  <span>Lihat Detail</span>
-                                  <HiEye className="ml-1" />
-                                </button>
+                                <div className="flex items-center justify-end mt-1">
+                                  <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center mr-3">
+                                    <span>Lihat Detail</span>
+                                    <HiEye className="ml-1" />
+                                  </button>
+                                  <button 
+                                    onClick={() => setShowDeleteTransactionModal(sale.transaction_id || sale.id)}
+                                    className="text-sm text-red-600 hover:text-red-800 flex items-center"
+                                  >
+                                    <span>Hapus</span>
+                                    <HiTrash className="ml-1" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -527,14 +650,24 @@ const ProfilePage = () => {
                     {isEditing && (
                       <div className="mb-6 flex flex-col items-center">
                         <div className="relative">
-                          <img
-                            src={imagePreview || getProfileImageUrl(user?.profile_picture)}
-                            alt={user?.name || 'User'}
-                            className="w-32 h-32 rounded-full object-cover border-4 border-green-100"
-                            onError={(e) => {
-                              e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
-                            }}
-                          />
+                          {imagePreview || getProfileImageUrl(user?.profile_picture) ? (
+                            <img
+                              src={imagePreview || getProfileImageUrl(user?.profile_picture)}
+                              alt={user?.name || 'User'}
+                              className="w-32 h-32 rounded-full object-cover border-4 border-green-100"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.parentNode.classList.add("bg-gray-300");
+                                e.target.classList.add("opacity-0");
+                              }}
+                            />
+                          ) : (
+                            <div className="w-32 h-32 rounded-full bg-gray-300 border-4 border-green-100 flex items-center justify-center animate-pulse">
+                              <svg className="w-16 h-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                          )}
                           <label className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full p-3 cursor-pointer shadow-lg hover:bg-green-700 transition-colors">
                             <HiOutlinePhotograph className="w-5 h-5" />
                             <input 
@@ -676,6 +809,107 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+      
+      {/* Delete Account Modal */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-center mb-6 text-red-600">
+              <HiExclamationCircle className="text-5xl" />
+            </div>
+            <h3 className="text-xl font-bold text-center mb-2">Hapus Akun Anda?</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Tindakan ini tidak dapat dibatalkan. Semua data Anda, termasuk profil, barang, dan transaksi akan dihapus secara permanen.
+            </p>
+            
+            {deleteError && (
+              <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
+                {deleteError}
+              </div>
+            )}
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Konfirmasi dengan Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <HiOutlineLockClosed className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="password"
+                  placeholder="Masukkan password Anda"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => {
+                  setShowDeleteAccountModal(false);
+                  setDeletePassword("");
+                  setDeleteError("");
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
+                disabled={isDeleting}
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleDeleteAccount}
+                className={`px-4 py-2 bg-red-600 text-white rounded-md shadow-md hover:bg-red-700 transition flex items-center ${isDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                disabled={isDeleting || !deletePassword}
+              >
+                {isDeleting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Menghapus...
+                  </>
+                ) : (
+                  <>
+                    <HiTrash className="mr-2" />
+                    Hapus Akun Saya
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Delete Transaction Modal */}
+      {showDeleteTransactionModal && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">Konfirmasi Penghapusan</h3>
+            <p className="text-gray-600 mb-6">
+              Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => setShowDeleteTransactionModal(null)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => handleDeleteTransaction(showDeleteTransactionModal)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md shadow-md hover:bg-red-700 transition flex items-center"
+              >
+                <HiTrash className="mr-2" />
+                Hapus Transaksi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -32,7 +32,7 @@ const DetailPage = () => {
         
         // Helper function to get full image URL
         const getImageUrl = (imagePath) => {
-          if (!imagePath) return null;
+          if (!imagePath) return null; // Return null to trigger skeleton
           if (imagePath.startsWith('http')) return imagePath;
           return `${API_BASE_URL}${imagePath}`;
         };
@@ -40,7 +40,7 @@ const DetailPage = () => {
         // Format data for component use
         const productData = {
           ...data,
-          images: data.image_url ? [getImageUrl(data.image_url)] : []
+          images: data.image_url ? [getImageUrl(data.image_url)] : ["https://via.placeholder.com/600x400?text=No+Image"]
         };
         
         setProduct(productData);
@@ -105,15 +105,25 @@ const DetailPage = () => {
           <div className="md:flex">
             {/* Product Images */}
             <div className="md:w-1/2 p-6">
-              <div className="h-80 md:h-96 overflow-hidden rounded-lg mb-4">
-                <img 
-                  src={product.images[activeImage] || "https://via.placeholder.com/600x400?text=No+Image"} 
-                  alt={product.item_name} 
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/600x400?text=No+Image";
-                  }}
-                />
+              <div className="h-80 md:h-96 overflow-hidden rounded-lg mb-4 bg-gray-100">
+                {product.images[activeImage] ? (
+                  <img 
+                    src={product.images[activeImage]} 
+                    alt={product.item_name} 
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.target.onerror = null; // Prevent infinite loop
+                      e.target.parentNode.classList.add("bg-gray-300");
+                      e.target.classList.add("opacity-0");
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-300 animate-pulse flex items-center justify-center">
+                    <svg className="w-12 h-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
               </div>
               
               {/* Thumbnail images */}
@@ -127,14 +137,24 @@ const DetailPage = () => {
                         activeImage === index ? 'border-green-500' : 'border-transparent'
                       }`}
                     >
-                      <img 
-                        src={img} 
-                        alt={`${product.item_name} thumbnail ${index + 1}`} 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.src = "https://via.placeholder.com/80x80?text=No+Image";
-                        }}
-                      />
+                      {img ? (
+                        <img 
+                          src={img} 
+                          alt={`${product.item_name} thumbnail ${index + 1}`} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.parentNode.classList.add("bg-gray-300");
+                            e.target.classList.add("opacity-0");
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-300 animate-pulse flex items-center justify-center">
+                          <svg className="w-6 h-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>

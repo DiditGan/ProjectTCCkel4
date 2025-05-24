@@ -151,21 +151,21 @@ export const deleteTransaksi = async (req, res) => {
     const transaksi = await Transaksi.findByPk(req.params.transaction_id);
     if (!transaksi) return res.status(404).json({ msg: "Transaksi tidak ditemukan" });
     
-    // Example: Only admin or involved parties under certain conditions can delete
-    // For now, let's restrict to seller if status is 'pending' or 'cancelled'
-    if (transaksi.seller_id !== req.userId || !['pending', 'cancelled'].includes(transaksi.status)) {
-      return res.status(403).json({ msg: "Anda tidak memiliki akses untuk menghapus transaksi ini atau status tidak memungkinkan." });
+    // Allow both buyer and seller to delete transactions they're involved in
+    if (transaksi.buyer_id !== req.userId && transaksi.seller_id !== req.userId) {
+      return res.status(403).json({ msg: "Anda tidak memiliki akses untuk menghapus transaksi ini" });
     }
     
-    // If transaction is cancelled, item might become available again
-    if (transaksi.status === 'cancelled') {
-        const barang = await Barang.findByPk(transaksi.item_id);
-        if (barang) await barang.update({ status: 'available' });
+    // If transaction is pending or cancelled, update item status to available
+    if (['pending', 'cancelled'].includes(transaksi.status)) {
+      const barang = await Barang.findByPk(transaksi.item_id);
+      if (barang) await barang.update({ status: 'available' });
     }
 
     await transaksi.destroy();
     res.json({ msg: "Transaksi berhasil dihapus" });
   } catch (error) {
+    console.error("Delete transaction error:", error);
     res.status(400).json({ msg: error.message });
   }
 };
