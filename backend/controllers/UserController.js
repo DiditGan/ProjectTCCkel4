@@ -4,7 +4,7 @@ import Transaksi from "../models/TransaksiModel.js";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
-import db from "../config/database.js";
+import db from "../config/Database.js";
 import { Op } from "sequelize";
 import { fileURLToPath } from 'url';
 

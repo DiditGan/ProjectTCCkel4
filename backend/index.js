@@ -1,5 +1,5 @@
 import express from "express";
-import db from "./config/database.js";
+import db from "./config/Database.js";
 import UserRoute from "./routes/UserRoute.js";
 import AuthRoute from "./routes/AuthRoute.js";
 import BarangRoute from "./routes/BarangRoute.js";

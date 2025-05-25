@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import db from "../config/database.js";
+import db from "../config/Database.js";
 import Barang from "./BarangModel.js";
 import User from "./UserModel.js";
 
