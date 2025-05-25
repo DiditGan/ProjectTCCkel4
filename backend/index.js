@@ -130,10 +130,11 @@ const startServer = async () => {
     await db.sync({ alter: true });
     console.log("Database synchronized.");
 
-    const _PORT = process.env.PORT || 5000;
-    app.listen(_PORT, "0.0.0.0", () =>
-      console.log(`Server running on port ${_PORT}`)
-    );
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
   } catch (error) {
     console.error("Failed to start server:", error.message);
     process.exit(1);

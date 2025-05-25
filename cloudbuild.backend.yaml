@@ -20,11 +20,17 @@ steps:
         "gcr.io/$PROJECT_ID/givetzy-backend",
         "--max-instances",
         "10",
-        "--port",
-        "5000",
         "--region",
         "us-central1",
         "--allow-unauthenticated",
+        "--set-env-vars",
+        "_ACCESS_TOKEN_SECRET=your_access_token_secret_here,_REFRESH_TOKEN_SECRET=your_refresh_token_secret_here",
+        "--timeout",
+        "300",
+        "--memory",
+        "512Mi",
+        "--cpu",
+        "1"
       ]
 
 # Log hanya akan disimpan di Google Cloud Logging
