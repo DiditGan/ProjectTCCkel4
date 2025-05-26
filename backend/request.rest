@@ -16,7 +16,7 @@ GET {{host}}/test-static
 GET {{host}}/uploads/products/product-1234567890-123456789.jpg
 
 ### Register User
-POST {{host}}/register
+POST {{host}}/auth/register
 Content-Type: application/json
 
 {
@@ -29,7 +29,7 @@ Content-Type: application/json
 
 ### Login User
 # This request will set accessToken and refreshToken from the response for use in other requests
-POST {{host}}/login
+POST {{host}}/auth/login
 Content-Type: application/json
 
 {
@@ -38,7 +38,7 @@ Content-Type: application/json
 }
 
 ### Refresh Token - Get New Access Token
-POST {{host}}/token
+POST {{host}}/auth/refresh-token
 Content-Type: application/json
 
 {
@@ -46,7 +46,7 @@ Content-Type: application/json
 }
 
 ### Logout User
-POST {{host}}/logout
+POST {{host}}/auth/logout
 Content-Type: application/json
 
 {
@@ -54,13 +54,13 @@ Content-Type: application/json
 }
 
 ### Get All Barang
-GET {{host}}/barang
+GET {{host}}/api/barang
 
 ### Get Barang by ID
-GET {{host}}/barang/1
+GET {{host}}/api/barang/1
 
 ### Create Barang (Multipart Form - with image file)
-POST {{host}}/barang
+POST {{host}}/api/barang
 Authorization: Bearer {{accessToken}}
 Content-Type: multipart/form-data; boundary=MyBoundary
 
@@ -96,7 +96,7 @@ Content-Type: image/jpeg
 --MyBoundary--
 
 ### Create Barang (JSON - without image)
-POST {{host}}/barang
+POST {{host}}/api/barang
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
@@ -110,7 +110,7 @@ Authorization: Bearer {{accessToken}}
 }
 
 ### Update Barang (Requires auth)
-PUT {{host}}/barang/1
+PUT {{host}}/api/barang/1
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
@@ -120,20 +120,20 @@ Authorization: Bearer {{accessToken}}
 }
 
 ### Delete Barang (Requires auth)
-DELETE {{host}}/barang/1
+DELETE {{host}}/api/barang/1
 Authorization: Bearer {{accessToken}}
 
 ### Get All Transaksi (Requires auth)
-GET {{host}}/transaksi
+GET {{host}}/api/transaksi
 Authorization: Bearer {{accessToken}}
 
 ### Get Transaksi by ID (Requires auth)
-GET {{host}}/transaksi/1
+GET {{host}}/api/transaksi/1
 Authorization: Bearer {{accessToken}}
 
 ### Create Transaksi (Requires auth)
 # Only need to provide item_id, buyer is extracted from token
-POST {{host}}/transaksi
+POST {{host}}/api/transaksi
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
@@ -144,7 +144,7 @@ Authorization: Bearer {{accessToken}}
 }
 
 ### Update Transaksi (Requires auth)
-PUT {{host}}/transaksi/1
+PUT {{host}}/api/transaksi/1
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
@@ -153,11 +153,11 @@ Authorization: Bearer {{accessToken}}
 }
 
 ### Delete Transaksi (Requires auth)
-DELETE {{host}}/transaksi/1
+DELETE {{host}}/api/transaksi/1
 Authorization: Bearer {{accessToken}}
 
 ### Delete Transaksi (With better access control)
-DELETE {{host}}/transaksi/1
+DELETE {{host}}/api/transaksi/1
 Authorization: Bearer {{accessToken}}
 
 ### Delete User Account (Requires password verification)
