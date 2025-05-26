@@ -1,35 +1,11 @@
 steps:
-  # 1. Build Docker image untuk backend
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/givetzy-backend", "."]
-    dir: "backend"
-
-  # 2. Push ke Container Registry / Artifact Registry
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/givetzy-backend"]
-
-  # 3. Deploy ke Cloud Run
   - name: "gcr.io/cloud-builders/gcloud"
-    entrypoint: gcloud
     args:
       [
-        "run",
+        "app",
         "deploy",
-        "givetzy-backend",
-        "--image",
-        "gcr.io/$PROJECT_ID/givetzy-backend",
-        "--max-instances",
-        "10",
-        "--region",
-        "us-central1",
-        "--allow-unauthenticated",
-        "--set-env-vars",
-        "_ACCESS_TOKEN_SECRET=b91c9e543930c5379f40de3c25b5bbeb9eea347de8d4dae1b0a6de568fac0342,_REFRESH_TOKEN_SECRET=a38d6e41db9e23fb95ecc5bb89deea2fae4e30463ebaf48397ddfa3c7e542c32,_DB_HOST=your_cloud_db_host,_DB_NAME=givetzy,_DB_USER=your_cloud_db_user,_DB_PASS=your_cloud_db_password",
-        "--timeout",
-        "3600",
+        "--quiet",
       ]
-
-# Log hanya akan disimpan di Google Cloud Logging
-# Log tidak akan disimpan di Google Cloud Storage (butuh hak akses).
+      
 options:
   logging: CLOUD_LOGGING_ONLY
