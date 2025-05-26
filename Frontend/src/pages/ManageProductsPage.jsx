@@ -9,7 +9,7 @@ import {
 } from "react-icons/hi";
 
 // API URL
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
 
 // Product categories
 const PRODUCT_CATEGORIES = [

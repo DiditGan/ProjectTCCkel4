@@ -5,7 +5,7 @@ import { HiOutlineShoppingCart, HiArrowLeft, HiOutlineLocationMarker } from "rea
 import { useAuth } from "../contexts/AuthContext";
 
 // API URL
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
 
 const DetailPage = () => {
   const { id } = useParams();
