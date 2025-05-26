@@ -10,23 +10,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
-// Load environment variables
 dotenv.config();
-
-// Check required environment variables
-if (!process.env._ACCESS_TOKEN_SECRET) {
-  console.warn(
-    "WARNING: _ACCESS_TOKEN_SECRET not set! Using default (insecure) value."
-  );
-  process.env._ACCESS_TOKEN_SECRET = "default__ACCESS_TOKEN_SECRET_key";
-}
-
-if (!process.env._REFRESH_TOKEN_SECRET) {
-  console.warn(
-    "WARNING: _REFRESH_TOKEN_SECRET not set! Using default (insecure) value."
-  );
-  process.env._REFRESH_TOKEN_SECRET = "default__REFRESH_TOKEN_SECRET_key";
-}
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -114,12 +98,6 @@ app.get("/test-static", (req, res) => {
         : "Directory does not exist"
     }</pre>
   `);
-});
-
-// Error handling middleware - place it after all routes
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ msg: "Terjadi kesalahan pada server" });
 });
 
 const startServer = async () => {
