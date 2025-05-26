@@ -61,8 +61,8 @@ _CORS_ORIGIN=http://localhost:3000
 
 For Google Cloud Run deployment, ensure you:
 
-1. Set proper environment variables in the Cloud Build configuration
-2. Use PORT environment variable (provided by Cloud Run)
+1. Set proper environment variables in the Cloud Build configuration. **Important:** Database credentials (`_DB_HOST`, `_DB_USER`, `_DB_PASS`) must be updated to point to your cloud database instance, not `localhost`.
+2. Use PORT environment variable (provided by Cloud Run) for your application to listen on `0.0.0.0`
 3. Configure database connection for cloud environment
 4. Set appropriate memory and CPU limits
 
