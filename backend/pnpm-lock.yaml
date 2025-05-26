@@ -23,12 +23,19 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      multer:
+        specifier: ^1.4.5-lts.1
+        version: 1.4.5-lts.1
       mysql2:
         specifier: ^3.14.1
         version: 3.14.1
       sequelize:
         specifier: ^6.37.7
         version: 6.37.7(mysql2@3.14.1)
+    devDependencies:
+      nodemon:
+        specifier: ^3.1.10
+        version: 3.1.10
 
 packages:
 
@@ -475,6 +482,44 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
+
+  mkdirp@1.0.4:
+    resolution: {integrity: sha512-vVqVZQyfGHXLUTCP7Lw1EH02d9xVzGnpHS3G2n7NMtW2XBwVNaqgL7jRXJDPynSSwU3gHTLIFoF1l3Lo9SjUrg==}
+    hasBin: true
+
+  multer@1.4.5-lts.1:
+    resolution: {integrity: sha512-TRHh8C1KDb2TedqA2gPkqf0h2foTBGfVnbZhf9FCX22VACLkEmlK7rcFKv2Z5TNPfTygL0h2u2qZ22n2NCLnXA==}
+    dependencies:
+      append-field: 1.0.0
+      busboy: 1.6.0
+      concat-stream: 1.6.2
+      mkdirp: 1.0.4
+      object-assign: 4.1.1
+      type-is: 2.0.1
+      xtend: 4.0.2
+    transitivePeerDependencies:
+      - supports-color
+
+  nodemon@3.1.10:
+    resolution: {integrity: sha512-3c4xZ9X207Q6f5D72TPA71YnB3yLzYmWIxJmXWjKqj3xT2/VlGZChGJMAD2L2l0L9pQkQ5K9uL2KvUvLpYp5Q==}
+    engines: {node: '>=10'}
+    hasBin: true
+    dependencies:
+      chokidar: 3.6.0
+      debug: 4.4.1
+      ignore-by-default: 1.0.1
+      minimatch: 3.1.2
+      pstree.remy: 1.1.8
+      semver: 7.7.2
+      simple-update-notifier: 2.0.0
+      supports-color: 8.1.1
+      touch: 3.1.1
+      undefsafe: 2.0.5
+    transitivePeerDependencies:
+      - supports-color
+
+  xtend@4.0.2: {}
+
 
 snapshots:
 
@@ -930,3 +975,32 @@ snapshots:
       '@types/node': 22.15.18
 
   wrappy@1.0.2: {}
+
+  mkdirp@1.0.4: {}
+
+  multer@1.4.5-lts.1:
+    dependencies:
+      append-field: 1.0.0
+      busboy: 1.6.0
+      concat-stream: 1.6.2
+      mkdirp: 1.0.4
+      object-assign: 4.1.1
+      type-is: 2.0.1
+      xtend: 4.0.2
+
+  nodemon@3.1.10:
+    dependencies:
+      chokidar: 3.6.0
+      debug: 4.4.1
+      ignore-by-default: 1.0.1
+      minimatch: 3.1.2
+      pstree.remy: 1.1.8
+      semver: 7.7.2
+      simple-update-notifier: 2.0.0
+      supports-color: 8.1.1
+      touch: 3.1.1
+      undefsafe: 2.0.5
+    transitivePeerDependencies:
+      - supports-color
+
+  xtend@4.0.2: {}
