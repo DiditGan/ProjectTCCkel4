@@ -1,14 +1,14 @@
 runtime: nodejs20
 
 handlers:
+  # Serve all static files from the dist directory
   - url: /(.*)
     static_files: dist/\1
     upload: dist/(.*)
     secure: always
-    redirect_http_response_code: 301
 
-  - url: /
+  # Fallback all other routes to index.html (SPA)
+  - url: /.*
     static_files: dist/index.html
     upload: dist/index.html
     secure: always
-    redirect_http_response_code: 301
