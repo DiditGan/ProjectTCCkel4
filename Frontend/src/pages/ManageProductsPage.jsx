@@ -142,7 +142,7 @@ const ManageProductsPage = () => {
   };
 
   // Remove uploaded image
-  const removeImage = (index) => {
+  const removeImage = () => {
     setNewProduct((prev) => ({
       ...prev,
       images: [],
@@ -763,7 +763,7 @@ const ManageProductsPage = () => {
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(index)}
+                        onClick={removeImage}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs"
                         title="Remove image"
                       >
