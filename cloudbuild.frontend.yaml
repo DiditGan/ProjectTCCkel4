@@ -1,27 +1,24 @@
 steps:
-  # Step 1: Install dependencies
+  # Step 1: Install dependencies (menghindari error `npm ci`)
   - name: "gcr.io/cloud-builders/npm"
     entrypoint: bash
     args:
       - -c
       - |
-        if [ ! -d "node_modules" ]; then
-          echo "Installing dependencies..."
-          npm install
-        else
-          echo "Skipping npm install, node_modules exists."
-        fi
+        echo "Installing dependencies..."
+        npm install
     dir: "Frontend"
     volumes:
       - name: "npm-cache"
         path: /root/.npm
 
-  # Step 2: Build frontend 
+  # Step 2: Build frontend
   - name: "gcr.io/cloud-builders/npm"
     entrypoint: bash
     args:
       - -c
       - |
+        echo "Running npm build..."
         npm run build
     dir: "Frontend"
     volumes:
