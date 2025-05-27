@@ -7,7 +7,7 @@ steps:
       - |
         if [ ! -d "node_modules" ]; then
           echo "Installing dependencies..."
-          npm ci
+          npm install
         else
           echo "Skipping npm install, node_modules exists."
         fi
