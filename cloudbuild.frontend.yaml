@@ -1,12 +1,12 @@
 steps:
-  # Step 1: Install dependencies (menghindari error `npm ci`)
+  # Step 1: Install dependencies (pakai npm install jika tidak ada package-lock.json)
   - name: "gcr.io/cloud-builders/npm"
     entrypoint: bash
     args:
       - -c
       - |
         echo "Installing dependencies..."
-        npm install
+        npm ci
     dir: "Frontend"
     volumes:
       - name: "npm-cache"
