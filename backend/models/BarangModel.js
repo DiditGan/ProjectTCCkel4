@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 import db from "../config/Database.js";
 import User from "./UserModel.js";
 
-const Product = db.define("barang", {
+const Barang = db.define("barangs", {
   item_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -31,7 +31,8 @@ const Product = db.define("barang", {
   },
   price: {
     type: DataTypes.DECIMAL(10, 2),
-    allowNull: true,
+    allowNull: false, // wajib diisi
+    defaultValue: 0,
   },
   condition: {
     type: DataTypes.STRING,
@@ -57,12 +58,14 @@ const Product = db.define("barang", {
     defaultValue: DataTypes.NOW,
   }
 }, {
+  tableName: "barangs",
   timestamps: true,
   updatedAt: 'updated_at',
   createdAt: 'created_at'
 });
 
-Product.belongsTo(User, { foreignKey: "user_id" });
-User.hasMany(Product, { foreignKey: "user_id" });
+// Relasi harus pakai as: "user" agar hasil include: [{ model: User, as: "user", ... }] bisa digunakan di controller/frontend
+Barang.belongsTo(User, { foreignKey: "user_id", as: "user" });
+User.hasMany(Barang, { foreignKey: "user_id" });
 
-export default Product;
+export default Barang;

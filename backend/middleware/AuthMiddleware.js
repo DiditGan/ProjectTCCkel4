@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
-import User from "../models/UserModel.js"; // Import User model
+import User from "../models/UserModel.js";
 
-export const verifyToken = async (req, res, next) => { // Make function async
-  const authHeader = req.headers.authorization;
+export const verifyToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
   
   // Check if Authorization header exists
   if (!authHeader) {
@@ -21,15 +21,11 @@ export const verifyToken = async (req, res, next) => { // Make function async
     return res.status(401).json({ msg: "Token tidak ditemukan" });
   }
 
-  try {
-    // Get token secret from environment variable or use default (for development)
-    const secretKey = process.env._ACCESS_TOKEN_SECRET || "access_secret_dev_key";
-    
-    // Verify token
-    const decoded = jwt.verify(token, secretKey);
-    
-    // Log for debugging
-    console.log("Token decoded:", decoded);
+  jwt.verify(token, process.env._ACCESS_TOKEN_SECRET, async (err, decoded) => {
+    if (err) {
+      console.error("Token verification error:", err);
+      return res.status(401).json({ msg: "Token sudah kadaluarsa" });
+    }
 
     // Check if user_id exists in decoded payload
     if (!decoded.user_id) {
@@ -52,17 +48,5 @@ export const verifyToken = async (req, res, next) => { // Make function async
     console.log("Token verified successfully for user ID:", req.userId);
     // Continue to the next middleware or route handler
     next();
-  } catch (err) {
-    console.error("Token verification error:", err);
-    
-    // Send appropriate error based on error type
-    if (err.name === "TokenExpiredError") {
-      return res.status(401).json({ msg: "Token sudah kadaluarsa" });
-    } else if (err.name === "JsonWebTokenError") {
-      return res.status(403).json({ msg: "Token tidak valid" });
-    } else {
-      // This might catch errors from User.findByPk if it's not a JWT specific error
-      return res.status(500).json({ msg: "Error verifikasi token atau server" });
-    }
-  }
+  });
 };

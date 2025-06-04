@@ -11,7 +11,7 @@ const _ACCESS_TOKEN_SECRET =
 const _REFRESH_TOKEN_SECRET =
   process.env._REFRESH_TOKEN_SECRET || "refresh_secret_dev_key";
 
-export const register = async (req, res) => {
+const register = async (req, res) => {
   const { email, password, name, phone_number, profile_picture } = req.body;
   if (!email || !password || !name)
     return res
@@ -36,7 +36,7 @@ export const register = async (req, res) => {
   }
 };
 
-export const login = async (req, res) => {
+const login = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ msg: "Email dan password wajib diisi" });
@@ -84,7 +84,7 @@ export const login = async (req, res) => {
   }
 };
 
-export const refreshToken = (req, res) => {
+const refreshToken = (req, res) => {
   const refreshToken = req.body.refreshToken;
 
   // Check if refresh token provided
@@ -115,11 +115,18 @@ export const refreshToken = (req, res) => {
   });
 };
 
-export const logout = (req, res) => {
+const logout = (req, res) => {
   const refreshToken = req.body.refreshToken;
 
   // Remove the refresh token from the list
   refreshTokens = refreshTokens.filter((token) => token !== refreshToken);
 
   res.status(200).json({ msg: "Logout berhasil" });
+};
+
+export {
+  register,
+  login,
+  refreshToken,
+  logout,
 };

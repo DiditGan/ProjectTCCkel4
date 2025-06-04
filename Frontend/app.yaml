@@ -9,6 +9,6 @@ handlers:
 
   # Fallback all other routes to index.html (SPA)
   - url: /.*
-    static_files: dist/index.html
-    upload: dist/index.html
+    static_files: dist/main.jsx
+    upload: dist/main.jsx
     secure: always

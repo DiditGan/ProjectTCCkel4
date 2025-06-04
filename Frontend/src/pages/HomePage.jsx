@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiSearch, HiFilter } from "react-icons/hi";
 
 // API URL
-const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
+const API_BASE_URL = "http://localhost:5000";
 
 const PRODUCT_CATEGORIES = [
   "All Items",
@@ -25,15 +25,12 @@ const HomePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [selectedCategory]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       // Build query params
       const params = new URLSearchParams();
       if (searchQuery) {
@@ -42,23 +39,26 @@ const HomePage = () => {
       if (selectedCategory && selectedCategory !== "All Items") {
         params.append('category', selectedCategory);
       }
-      
+
+      // Gunakan endpoint yang benar
       const response = await fetch(`${API_BASE_URL}/api/barang?${params.toString()}`);
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch products");
       }
-      
+
       const data = await response.json();
-      console.log("Fetched products:", data);
       setProducts(data);
     } catch (error) {
-      console.error("Error fetching products:", error);
       setError(error.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchQuery, selectedCategory]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [selectedCategory, fetchProducts]);
 
   // Handle search form submission
   const handleSearch = (e) => {
@@ -75,15 +75,11 @@ const HomePage = () => {
   // Helper function to get full image URL with better error handling
   const getImageUrl = (imagePath) => {
     if (!imagePath) {
-      return null; // Return null to trigger skeleton UI
+      return `${API_BASE_URL}/uploads/products/.gitkeep`;
     }
-    
-    // If it's already a full URL, return as is
     if (imagePath.startsWith('http')) {
       return imagePath;
     }
-    
-    // If it's a relative path, prepend the API base URL
     return `${API_BASE_URL}${imagePath}`;
   };
 

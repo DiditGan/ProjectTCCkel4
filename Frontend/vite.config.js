@@ -7,7 +7,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api': 'https://givetzy-backend-469569820136.us-central1.run.app/'
+      '/api': 'http://localhost:5000',
+      '/uploads': 'http://localhost:5000',
     }
   }
 });

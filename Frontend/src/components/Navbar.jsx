@@ -30,15 +30,6 @@ const Navbar = () => {
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
-
-  const handleProfileClick = () => {
-    if (currentUser) {
-      navigate('/profile');
-    } else {
-      navigate('/login');
-    }
-    if (isOpen) setIsOpen(false);
-  };
   
   const handleLogout = () => {
     logout();

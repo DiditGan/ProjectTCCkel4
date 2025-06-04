@@ -5,7 +5,7 @@ import { HiCreditCard, HiCash, HiArrowLeft, HiCheck, HiExclamationCircle } from 
 import { useAuth } from "../contexts/AuthContext";
 
 // API Base URL
-const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
+const API_BASE_URL = "http://localhost:5000";
 
 // Payment methods
 const PAYMENT_METHODS = [
@@ -86,7 +86,7 @@ const CheckoutPage = () => {
             ? (productData.image_url.startsWith('http') 
               ? productData.image_url 
               : `${API_BASE_URL}${productData.image_url}`)
-            : null // Return null to trigger skeleton UI instead of placeholder
+            : `${API_BASE_URL}/uploads/products/.gitkeep`
         });
         
         // Fetch user profile for pre-filling customer info

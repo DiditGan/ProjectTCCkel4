@@ -9,7 +9,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 
 // Define the API base URL for real API calls
-const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
+const API_BASE_URL = "http://localhost:5000";
 
 const ProfilePage = () => {
   const { currentUser, logout, updateUserData, deleteAccount } = useAuth(); 
@@ -312,6 +312,13 @@ const ProfilePage = () => {
     }
   };
 
+  // Helper for transaction product image
+  const getTransactionProductImage = (imgPath) => {
+    if (!imgPath) return `${API_BASE_URL}/uploads/products/.gitkeep`;
+    if (imgPath.startsWith('http')) return imgPath;
+    return `${API_BASE_URL}${imgPath.startsWith('/') ? imgPath : `/${imgPath}`}`;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -471,9 +478,9 @@ const ProfilePage = () => {
                             </div>
                             
                             <div className="flex items-center">
-                              {getProfileImageUrl(transaction.item?.image_url || transaction.product?.imageUrl) ? (
+                              {getTransactionProductImage(transaction.item?.image_url || transaction.product?.imageUrl) ? (
                                 <img
-                                  src={getProfileImageUrl(transaction.item?.image_url || transaction.product?.imageUrl)}
+                                  src={getTransactionProductImage(transaction.item?.image_url || transaction.product?.imageUrl)}
                                   alt={transaction.item?.item_name || transaction.product?.name}
                                   className="w-16 h-16 object-cover rounded-md mr-4 bg-gray-100"
                                   onError={(e) => {
@@ -557,9 +564,9 @@ const ProfilePage = () => {
                             </div>
                             
                             <div className="flex items-center">
-                              {getProfileImageUrl(sale.item?.image_url || sale.product?.imageUrl) ? (
+                              {getTransactionProductImage(sale.item?.image_url || sale.product?.imageUrl) ? (
                                 <img
-                                  src={getProfileImageUrl(sale.item?.image_url || sale.product?.imageUrl)}
+                                  src={getTransactionProductImage(sale.item?.image_url || sale.product?.imageUrl)}
                                   alt={sale.item?.item_name || sale.product?.name}
                                   className="w-16 h-16 object-cover rounded-md mr-4 bg-gray-100"
                                   onError={(e) => {

@@ -1,9 +1,9 @@
 import Transaksi from "../models/TransaksiModel.js";
 import Barang from "../models/BarangModel.js";
-import User from "../models/UserModel.js"; // Import User model
+import User from "../models/UserModel.js";
 import { Op } from "sequelize";
 
-export const getTransaksi = async (req, res) => {
+const getTransaksi = async (req, res) => {
   try {
     const { type } = req.query; // type can be 'purchase' or 'sale'
     let whereClause = {};
@@ -42,7 +42,7 @@ export const getTransaksi = async (req, res) => {
   }
 };
 
-export const getTransaksiById = async (req, res) => {
+const getTransaksiById = async (req, res) => {
   try {
     const transaksi = await Transaksi.findByPk(req.params.transaction_id, {
       include: [
@@ -69,7 +69,7 @@ export const getTransaksiById = async (req, res) => {
   }
 };
 
-export const createTransaksi = async (req, res) => {
+const createTransaksi = async (req, res) => {
   try {
     const buyer_id = req.userId;
     const { item_id, quantity, payment_method, shipping_address, customerInfo } = req.body;
@@ -124,7 +124,7 @@ export const createTransaksi = async (req, res) => {
   }
 };
 
-export const updateTransaksi = async (req, res) => {
+const updateTransaksi = async (req, res) => {
   try {
     const transaksi = await Transaksi.findByPk(req.params.transaction_id);
     if (!transaksi) return res.status(404).json({ msg: "Transaksi tidak ditemukan" });
@@ -146,7 +146,7 @@ export const updateTransaksi = async (req, res) => {
   }
 };
 
-export const deleteTransaksi = async (req, res) => {
+const deleteTransaksi = async (req, res) => {
   try {
     const transaksi = await Transaksi.findByPk(req.params.transaction_id);
     if (!transaksi) return res.status(404).json({ msg: "Transaksi tidak ditemukan" });
@@ -168,4 +168,12 @@ export const deleteTransaksi = async (req, res) => {
     console.error("Delete transaction error:", error);
     res.status(400).json({ msg: error.message });
   }
+};
+
+export {
+  getTransaksi,
+  getTransaksiById,
+  createTransaksi,
+  updateTransaksi,
+  deleteTransaksi
 };

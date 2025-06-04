@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Navbar from "../components/Navbar";
 import {
   HiOutlinePlus,
@@ -9,7 +9,7 @@ import {
 } from "react-icons/hi";
 
 // API URL
-const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
+const API_BASE_URL = "http://localhost:5000";
 
 // Product categories
 const PRODUCT_CATEGORIES = [
@@ -45,43 +45,91 @@ const ManageProductsPage = () => {
     images: [],
   });
 
-  useEffect(() => {
-    fetchProducts();
-  }, [filterStatus]);
+  const getToken = () => localStorage.getItem("accessToken");
 
-  const fetchProducts = async () => {
+  // Helper: fetch with auto refresh token
+  const authFetch = useCallback(
+    async (url, options = {}, retry = true) => {
+      let accessToken = getToken();
+      const refreshToken = localStorage.getItem("refreshToken");
+      options.headers = options.headers || {};
+      if (accessToken) {
+        options.headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+      let res = await fetch(url, options);
+      if (
+        res.status === 401 &&
+        retry &&
+        refreshToken &&
+        (await res.clone().json().catch(() => null))?.msg === "Token sudah kadaluarsa"
+      ) {
+        // Try refresh token
+        const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (refreshRes.ok) {
+          const { accessToken: newAccessToken } = await refreshRes.json();
+          localStorage.setItem("accessToken", newAccessToken);
+          options.headers["Authorization"] = `Bearer ${newAccessToken}`;
+          // Retry original request
+          res = await fetch(url, options);
+        } else {
+          // Refresh failed, force logout
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("currentUser");
+          window.location.reload();
+          throw new Error("Session expired, please login again.");
+        }
+      }
+      return res;
+    },
+    []
+  );
+
+  const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
-
-      // Fix: Use correct API endpoint for getting user's products
       let url = `${API_BASE_URL}/api/my-barang`;
       if (filterStatus !== "all") {
         url += `?status=${filterStatus}`;
       }
 
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const response = await authFetch(url);
       if (!response.ok) {
-        throw new Error("Failed to fetch products");
+        // Tambahkan log error detail
+        let errText = "";
+        try {
+          errText = await response.text();
+        } catch {
+          errText = "No response body";
+        }
+        console.error("Fetch products failed:", response.status, response.statusText, errText);
+        throw new Error(`Failed to fetch products: ${response.status} ${response.statusText} ${errText}`);
       }
-
       const data = await response.json();
       setProducts(data);
     } catch (error) {
       console.error("Error fetching products:", error);
-      setError(error.message);
+      setError(error.message || String(error));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filterStatus, authFetch]);
+
+  useEffect(() => {
+    // Jika tidak ada token, redirect ke login
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+    fetchProducts();
+  }, [filterStatus, fetchProducts]);
 
   // Format price to Rupiah
   const formatPrice = (price) => {
@@ -166,11 +214,6 @@ const ManageProductsPage = () => {
         return;
       }
 
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
-
       // Create FormData for file upload
       const formData = new FormData();
       formData.append("item_name", newProduct.name);
@@ -185,18 +228,21 @@ const ManageProductsPage = () => {
         formData.append("image", newProduct.imageFile);
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/barang`, {
+      // Simpan base64 ke localStorage setelah produk berhasil ditambah
+      const response = await authFetch(`${API_BASE_URL}/api/barang`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Content-Type is set automatically for FormData
-        },
         body: formData,
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.msg || "Failed to create product");
+      }
+
+      const result = await response.json();
+      // Jika ada gambar, simpan ke localStorage dengan key productId
+      if (newProduct.images.length > 0 && result.data && result.data.item_id) {
+        saveImageToLocal(result.data.item_id, newProduct.images[0]);
       }
 
       // Reset form and close modal
@@ -210,7 +256,6 @@ const ManageProductsPage = () => {
       });
       setShowAddModal(false);
 
-      // Refresh products list
       fetchProducts();
     } catch (error) {
       console.error("Error creating product:", error);
@@ -226,16 +271,10 @@ const ManageProductsPage = () => {
 
       const newStatus = product.status === "available" ? "sold" : "available";
 
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/barang/${id}`, {
+      const response = await authFetch(`${API_BASE_URL}/api/barang/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -263,14 +302,8 @@ const ManageProductsPage = () => {
   // Delete product
   const handleDeleteProduct = async (id) => {
     try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/barang/${id}`, {
+      const response = await authFetch(`${API_BASE_URL}/api/barang/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
@@ -368,11 +401,6 @@ const ManageProductsPage = () => {
         return;
       }
 
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
-
       // Create FormData for file upload
       const formData = new FormData();
       formData.append("item_name", editingProduct.name);
@@ -387,14 +415,10 @@ const ManageProductsPage = () => {
         formData.append("image", editingProduct.imageFile);
       }
 
-      const response = await fetch(
+      const response = await authFetch(
         `${API_BASE_URL}/api/barang/${editingProduct.item_id}`,
         {
           method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            // Content-Type is set automatically for FormData
-          },
           body: formData,
         }
       );
@@ -412,6 +436,31 @@ const ManageProductsPage = () => {
       console.error("Error updating product:", error);
       alert(error.message);
     }
+  };
+
+  // Helper untuk menyimpan gambar ke localStorage
+  const saveImageToLocal = (productId, base64) => {
+    if (!productId || !base64) return;
+    let images = JSON.parse(localStorage.getItem("productImages") || "{}");
+    images[productId] = base64;
+    localStorage.setItem("productImages", JSON.stringify(images));
+  };
+
+  // Helper untuk mengambil gambar dari localStorage
+  const getImageFromLocal = (productId) => {
+    let images = JSON.parse(localStorage.getItem("productImages") || "{}");
+    return images[productId] || null;
+  };
+
+  // Helper untuk menampilkan gambar produk (prioritaskan localStorage)
+  const getProductImageUrl = (product) => {
+    // Cek localStorage dulu
+    const localImg = getImageFromLocal(product.item_id);
+    if (localImg) return localImg;
+    // Jika tidak ada di localStorage, fallback ke backend
+    if (!product.image_url) return "https://via.placeholder.com/40?text=No+Image";
+    if (product.image_url.startsWith("http")) return product.image_url;
+    return `${API_BASE_URL}${product.image_url}`;
   };
 
   return (
@@ -530,15 +579,10 @@ const ManageProductsPage = () => {
                             <div className="h-10 w-10 flex-shrink-0 mr-3">
                               <img
                                 className="h-10 w-10 rounded-md object-cover"
-                                src={
-                                  product.image_url
-                                    ? `${API_BASE_URL}${product.image_url}`
-                                    : "https://via.placeholder.com/40?text=No+Image"
-                                }
+                                src={getProductImageUrl(product)}
                                 alt={product.item_name}
                                 onError={(e) => {
-                                  e.target.src =
-                                    "https://via.placeholder.com/40?text=No+Image";
+                                  e.target.src = "https://via.placeholder.com/40?text=No+Image";
                                 }}
                               />
                             </div>

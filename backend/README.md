@@ -227,7 +227,7 @@ Records of transactions between users for products.
     - `order`: Sort order (ASC/DESC)
   - Response: Array of product objects
 
-- **GET /api/barang/me**
+- **GET /api/barang/me** or **GET /api/my-barang**
   - Description: Get products listed by current user
   - Authentication: Required
   - Query Parameters:

@@ -8,6 +8,7 @@ import {
   getMyBarang
 } from "../controllers/BarangController.js";
 import { verifyToken } from "../middleware/AuthMiddleware.js";
+import { uploadProductImage } from "../middleware/UploadMiddleware.js";
 
 const router = express.Router();
 
@@ -16,9 +17,10 @@ router.get("/barang", getBarang);
 router.get("/barang/:item_id", getBarangById);
 
 // Protected routes
-router.post("/barang", verifyToken, createBarang);
-router.put("/barang/:item_id", verifyToken, updateBarang);
+router.post("/barang", verifyToken, uploadProductImage, createBarang);
+router.put("/barang/:item_id", verifyToken, uploadProductImage, updateBarang);
 router.delete("/barang/:item_id", verifyToken, deleteBarang);
 router.get("/my-barang", verifyToken, getMyBarang);
+router.get("/barang/me", verifyToken, getMyBarang);
 
 export default router;

@@ -11,7 +11,7 @@ const defaultProfileImage = "https://images.unsplash.com/photo-1472099645785-565
 
 const Profile = ({ onClose }) => {
   const navigate = useNavigate();
-  const { currentUser, logout, updateUserData } = useAuth();
+  const { logout, updateUserData } = useAuth();
   const [activeTab, setActiveTab] = useState("profile"); // profile or password
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);

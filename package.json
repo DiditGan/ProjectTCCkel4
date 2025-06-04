@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "choco": "^0.2.1"
+  },
+  "devDependencies": {
+    "autocannon": "^8.0.0"
+  }
+}

@@ -1,9 +1,12 @@
 import User from "../models/UserModel.js";
+import Barang from "../models/BarangModel.js";
+import Transaksi from "../models/TransaksiModel.js";
 import bcrypt from "bcryptjs";
 import db from "../config/Database.js";
+import { Op } from "sequelize";
 
 // Get current directory (ES Module equivalent of __dirname)
-export const getUsers = async (req, res) => {
+const getUsers = async (req, res) => {
   try {
     const users = await User.findAll({ attributes: { exclude: ["password"] } });
     res.json(users);
@@ -12,7 +15,7 @@ export const getUsers = async (req, res) => {
   }
 };
 
-export const createUser = async (req, res) => {
+const createUser = async (req, res) => {
   const { email, password, name, phone_number } = req.body;
   try {
     await User.create({ email, password, name, phone_number });
@@ -22,7 +25,7 @@ export const createUser = async (req, res) => {
   }
 };
 
-export const updateUser = async (req, res) => {
+const updateUser = async (req, res) => {
   const { user_id } = req.params;
   const { email, name, phone_number } = req.body;
   try {
@@ -36,7 +39,7 @@ export const updateUser = async (req, res) => {
   }
 };
 
-export const deleteUser = async (req, res) => {
+const deleteUser = async (req, res) => {
   const { user_id } = req.params;
   try {
     await User.destroy({ where: { user_id } });
@@ -46,7 +49,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-export const getMyProfile = async (req, res) => {
+const getMyProfile = async (req, res) => {
   try {
     const user = await User.findByPk(req.userId, {
       attributes: { exclude: ["password"] },
@@ -58,7 +61,7 @@ export const getMyProfile = async (req, res) => {
   }
 };
 
-export const updateMyProfile = async (req, res) => {
+const updateMyProfile = async (req, res) => {
   try {
     const { email, name, phone_number, address, current_password, new_password } = req.body;
     
@@ -106,7 +109,7 @@ export const updateMyProfile = async (req, res) => {
 };
 
 // Admin function - Get all users (optional, if needed)
-export const getAllUsers = async (req, res) => {
+const getAllUsers = async (req, res) => {
   try {
     // Add admin role check here if you have roles
     const users = await User.findAll({ attributes: { exclude: ["password"] } });
@@ -117,7 +120,7 @@ export const getAllUsers = async (req, res) => {
 };
 
 // Admin function - Delete user (optional, if needed)
-export const deleteUserById = async (req, res) => {
+const deleteUserById = async (req, res) => {
   const { user_id } = req.params;
   try {
     // Add admin role check here
@@ -130,7 +133,7 @@ export const deleteUserById = async (req, res) => {
   }
 };
 
-export const deleteAccount = async (req, res) => {
+const deleteAccount = async (req, res) => {
   try {
     const user_id = req.userId;
     const { password } = req.body;
@@ -180,5 +183,17 @@ export const deleteAccount = async (req, res) => {
     console.error("Error deleting account:", error);
     res.status(500).json({ msg: error.message });
   }
+};
+
+export {
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  getMyProfile,
+  updateMyProfile,
+  getAllUsers,
+  deleteUserById,
+  deleteAccount
 };
 

@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Check for user in localStorage on initial load
     const checkUserAuth = () => {
-      const userData = localStorage.getItem('user');
+      const userData = localStorage.getItem('currentUser');
       if (userData) {
         setCurrentUser(JSON.parse(userData));
       }
@@ -31,34 +31,25 @@ export function AuthProvider({ children }) {
       console.log("Attempting to login with email:", email);
       
       // Try to fetch from API
-      const response = await fetch('http://localhost:5000/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.msg || 'Login failed');
-        }
-        
-        // Store tokens and user data
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        setCurrentUser(data.user);
-        return data.user;
-      } else {
-        // Handle non-JSON response
-        const text = await response.text();
-        console.error("Non-JSON response:", text);
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error('Login gagal');
       }
+      
+      const data = await response.json();
+      
+      // Store tokens and user data
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+      
+      setCurrentUser(data.user);
+      return data.user;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -101,23 +92,20 @@ export function AuthProvider({ children }) {
   // Logout function
   const logout = () => {
     // Clear all auth data
-    localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("currentUser");
     setCurrentUser(null);
   };
   
   // Update user data function
   const updateUserData = (newUserData) => {
-    // Ensure newUserData is not null or undefined before updating
     if (newUserData) {
-      // newUserData is the complete updated user object from the backend
       setCurrentUser(newUserData); 
-      localStorage.setItem('user', JSON.stringify(newUserData));
+      localStorage.setItem('currentUser', JSON.stringify(newUserData));
     } else {
-      // If newUserData is null (e.g. after logout or error), clear user data
       setCurrentUser(null);
-      localStorage.removeItem('user');
+      localStorage.removeItem('currentUser');
     }
   };
   

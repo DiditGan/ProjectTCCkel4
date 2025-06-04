@@ -7,19 +7,23 @@ import TransaksiRoute from "./routes/TransaksiRoute.js";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
-import { fileURLToPath } from "url";
 import fs from "fs";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 dotenv.config();
 const app = express();
 
+// Log env DB config untuk debugging (hapus di production)
+console.log("DB_HOST:", process.env._DB_HOST);
+console.log("DB_USER:", process.env._DB_USER);
+console.log("DB_NAME:", process.env._DB_NAME);
+
 // Middleware - Order is important!
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5000"
+    ],
     credentials: true,
   })
 );
@@ -27,13 +31,21 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-app.use("/public", express.static(path.join(path.resolve(), "public")));
+// __dirname workaround for ES module
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Create public/images directory if it doesn't exist
+// Pastikan path static benar
+app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
+app.use("/public", express.static(path.join(__dirname, "public")));
+
+// Create public/uploads/products directory if it doesn't exist
 const publicDir = path.join(__dirname, "public");
 const imagesDir = path.join(publicDir, "images");
+const uploadsDir = path.join(publicDir, "uploads", "products");
 
-[publicDir, imagesDir].forEach((dir) => {
+[publicDir, imagesDir, uploadsDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
     console.log(`📁 Created directory: ${dir}`);
@@ -55,3 +67,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+export default app;

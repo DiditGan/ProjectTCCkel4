@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { HiOutlineShoppingCart, HiArrowLeft, HiOutlineLocationMarker } from "react-icons/hi"; 
-import { useAuth } from "../contexts/AuthContext";
 
 // API URL
-const API_BASE_URL = "https://givetzy-backend-469569820136.us-central1.run.app";
+const API_BASE_URL = "http://localhost:5000";
 
 const DetailPage = () => {
   const { id } = useParams();
@@ -14,7 +13,7 @@ const DetailPage = () => {
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { currentUser } = useAuth();
+  // const { currentUser } = useAuth();
   
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -32,7 +31,7 @@ const DetailPage = () => {
         
         // Helper function to get full image URL
         const getImageUrl = (imagePath) => {
-          if (!imagePath) return null; // Return null to trigger skeleton
+          if (!imagePath) return `${API_BASE_URL}/uploads/products/.gitkeep`;
           if (imagePath.startsWith('http')) return imagePath;
           return `${API_BASE_URL}${imagePath}`;
         };
@@ -40,7 +39,7 @@ const DetailPage = () => {
         // Format data for component use
         const productData = {
           ...data,
-          images: data.image_url ? [getImageUrl(data.image_url)] : ["https://via.placeholder.com/600x400?text=No+Image"]
+          images: data.image_url ? [getImageUrl(data.image_url)] : [`${API_BASE_URL}/uploads/products/.gitkeep`]
         };
         
         setProduct(productData);
